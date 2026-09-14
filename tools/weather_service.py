@@ -13,18 +13,22 @@ def get_weather_conditions(
     longitude: float,
     forecast_days: int = 3,
 ) -> dict:
-    """
-    Retrieve atmospheric conditions relevant to marine operations.
-    """
 
     forecast_days = max(
         1,
-        min(forecast_days, 7),
+        min(
+            int(forecast_days),
+            7,
+        ),
     )
 
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
+
+        "latitude":
+            latitude,
+
+        "longitude":
+            longitude,
 
         "current": ",".join([
             "temperature_2m",
@@ -38,15 +42,18 @@ def get_weather_conditions(
         "hourly": ",".join([
             "wind_speed_10m",
             "wind_direction_10m",
+            "wind_gusts_10m",
             "precipitation_probability",
             "precipitation",
             "weather_code",
             "visibility",
         ]),
 
-        "forecast_days": forecast_days,
+        "forecast_days":
+            forecast_days,
 
-        "timezone": "UTC",
+        "timezone":
+            "UTC",
     }
 
     try:
@@ -62,7 +69,9 @@ def get_weather_conditions(
         data = response.json()
 
         return {
-            "status": "OK",
+
+            "status":
+                "OK",
 
             "source":
                 "Open-Meteo Weather",
@@ -99,12 +108,26 @@ def get_weather_conditions(
 
             "forecast_days":
                 forecast_days,
+
+            "data_status":
+                "FORECAST_AVAILABLE",
+
         }
 
     except Exception as exc:
 
         return {
-            "status": "ERROR",
-            "source": "Open-Meteo Weather",
-            "error": str(exc),
+
+            "status":
+                "ERROR",
+
+            "source":
+                "Open-Meteo Weather",
+
+            "error":
+                str(exc),
+
+            "data_status":
+                "UNAVAILABLE",
+
         }

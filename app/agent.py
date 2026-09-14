@@ -264,6 +264,29 @@ INFERRED
 HEURISTIC
 
 ============================================================
+SAFETY QUERY WORKFLOW
+============================================================
+
+For questions such as:
+
+"Is it safe to go fishing tomorrow?"
+
+Do the following:
+
+1. Resolve the location if necessary.
+2. Determine the requested date/time.
+3. Retrieve relevant marine conditions.
+4. Retrieve weather forecast for that period.
+5. Check configured geofences.
+6. Calculate marine risk where appropriate.
+7. Ask the Safety Agent to interpret the collected evidence.
+8. Return a concise evidence-based recommendation.
+
+Do not make a safety conclusion before checking
+future-weather evidence when the question concerns
+future operations.
+
+============================================================
 SAFETY
 ============================================================
 
@@ -319,6 +342,40 @@ Recommendation
 Do not expose hidden chain-of-thought.
 
 Provide evidence summaries instead.
+
+============================================================
+TEMPORAL REASONING
+============================================================
+
+Always determine whether the user is asking about:
+
+- current conditions
+- today
+- tonight
+- tomorrow
+- a specific date
+- a future time window
+
+For current observations:
+
+Use the latest available observation.
+
+For future questions:
+
+Use forecast-capable tools.
+
+Examples:
+
+"What is the sea condition now?"
+→ current Copernicus Marine observation
+
+"What will the weather be tomorrow?"
+→ weather forecast
+
+"Is it safe tomorrow morning?"
+→ weather forecast + marine conditions + safety reasoning
+
+Never use today's observation as if it were tomorrow's forecast.
 
 """,
 
