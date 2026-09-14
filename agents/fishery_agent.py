@@ -7,7 +7,9 @@ fishery_agent = LlmAgent(
     name="fishery_agent",
 
     model=LiteLlm(
-        model="ollama_chat/qwen3:8b"
+        model="ollama_chat/qwen3:8b",
+        # think=False,
+        # num_predict=768,
     ),
 
     description=(

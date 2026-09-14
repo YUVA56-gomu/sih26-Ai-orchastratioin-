@@ -7,7 +7,9 @@ safety_agent = LlmAgent(
     name="safety_agent",
 
     model=LiteLlm(
-        model="ollama_chat/qwen3:8b"
+        model="ollama_chat/qwen3:8b",
+        think=True,
+        # num_predict=768,
     ),
 
     description=(
