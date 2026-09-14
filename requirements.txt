@@ -1,0 +1,12 @@
+google-adk
+litellm>=1.84
+python-dotenv
+httpx
+pydantic
+requests
+copernicusmarine
+xarray
+zarr
+numpy
+fastapi
+uvicorn

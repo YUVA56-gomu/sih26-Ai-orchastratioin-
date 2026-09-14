@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>ORCA — Ocean Intelligence</title>
+
+    <!-- Leaflet -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIINfQ3hyfX5Gg8C1j0mZ4Fj9jvZx5X9f5M="
+        crossorigin=""
+    />
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+            background: #07111f;
+            color: #eaf3ff;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* =========================================================
+           HEADER
+        ========================================================= */
+
+        .topbar {
+            height: 66px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 22px;
+            background: rgba(5, 14, 27, 0.97);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 1000;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00c6ff, #0066ff);
+            color: white;
+            box-shadow: 0 0 24px rgba(0, 145, 255, 0.35);
+        }
+
+        .brand-text h1 {
+            margin: 0;
+            font-size: 19px;
+            line-height: 1;
+            letter-spacing: 0.5px;
+        }
+
+        .brand-text span {
+            display: block;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #87a0ba;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: #9eb1c7;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #34d399;
+            box-shadow: 0 0 12px rgba(52, 211, 153, 0.75);
+        }
+
+        .status-dot.error {
+            background: #ff5f56;
+            box-shadow: 0 0 12px rgba(255, 95, 86, 0.75);
+        }
+
+        /* =========================================================
+           LAYOUT
+        ========================================================= */
+
+        .app {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            position: relative;
+        }
+
+        .sidebar {
+            width: 330px;
+            flex-shrink: 0;
+            background: rgba(7, 18, 33, 0.98);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 18px;
+            overflow-y: auto;
+            z-index: 900;
+        }
+
+        .map-section {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #0a1727;
+        }
+
+        /* =========================================================
+           SIDEBAR
+        ========================================================= */
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            margin: 0 0 10px;
+            font-size: 11px;
+            color: #7f97b2;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 700;
+        }
+
+        .parameter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+        }
+
+        .parameter-btn {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #0c1b30;
+            color: #bdd0e6;
+            padding: 11px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.18s ease;
+            font-size: 12px;
+        }
+
+        .parameter-btn:hover {
+            border-color: rgba(0, 183, 255, 0.45);
+            background: #10243c;
+        }
+
+        .parameter-btn.active {
+            border-color: rgba(0, 183, 255, 0.8);
+            background: rgba(0, 132, 255, 0.16);
+            color: #ffffff;
+            box-shadow:
+                inset 0 0 0 1px rgba(0, 183, 255, 0.12),
+                0 0 18px rgba(0, 132, 255, 0.08);
+        }
+
+        .parameter-name {
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .parameter-key {
+            font-size: 10px;
+            color: #6e88a5;
+            text-transform: uppercase;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            color: #91a7bf;
+            font-size: 11px;
+        }
+
+        select,
+        input[type="number"] {
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 9px;
+            background: #0b1a2d;
+            color: #eaf3ff;
+            padding: 10px;
+            outline: none;
+        }
+
+        select:focus,
+        input[type="number"]:focus {
+            border-color: rgba(0, 183, 255, 0.6);
+        }
+
+        .coordinate-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 11px;
+            border: none;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #007cf0, #00b7ff);
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.16s ease, opacity 0.16s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .secondary-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: #0c1c31;
+            color: #bcd0e6;
+            cursor: pointer;
+        }
+
+        .secondary-btn:hover {
+            background: #12253f;
+        }
+
+        /* =========================================================
+           DATA CARD
+        ========================================================= */
+
+        .data-card {
+            background: linear-gradient(
+                180deg,
+                rgba(13, 32, 53, 0.95),
+                rgba(8, 22, 39, 0.95)
+            );
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 13px;
+            padding: 14px;
+        }
+
+        .data-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .data-status-title {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.7px;
+            background: rgba(52, 211, 153, 0.12);
+            color: #66e2b2;
+            border: 1px solid rgba(52, 211, 153, 0.18);
+        }
+
+        .badge.partial {
+            background: rgba(251, 191, 36, 0.12);
+            color: #f7c64d;
+            border-color: rgba(251, 191, 36, 0.18);
+        }
+
+        .badge.error {
+            background: rgba(255, 95, 86, 0.12);
+            color: #ff938d;
+            border-color: rgba(255, 95, 86, 0.18);
+        }
+
+        .metric {
+            padding: 10px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .metric:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            color: #7890aa;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .metric-sub {
+            margin-top: 3px;
+            font-size: 10px;
+            color: #7890aa;
+        }
+
+        .empty-state {
+            color: #6f879f;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        /* =========================================================
+           MAP CONTROLS
+        ========================================================= */
+
+        .map-overlay {
+            position: absolute;
+            z-index: 700;
+            top: 18px;
+            right: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 240px;
+        }
+
+        .glass-card {
+            background: rgba(7, 17, 31, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 13px;
+            padding: 13px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28);
+        }
+
+        .map-card-title {
+            margin: 0 0 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #8199b4;
+            letter-spacing: 1px;
+        }
+
+        .layer-status {
+            font-size: 12px;
+            color: #dce8f5;
+            line-height: 1.45;
+        }
+
+        .legend {
+            position: absolute;
+            z-index: 700;
+            bottom: 24px;
+            right: 18px;
+            width: 220px;
+            background: rgba(7, 17, 31, 0.88);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 13px;
+            padding: 12px;
+            display: none;
+        }
+
+        .legend-title {
+            font-size: 11px;
+            color: #9eb3c9;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .legend-bar {
+            height: 10px;
+            border-radius: 999px;
+            background:
+                linear-gradient(
+                    90deg,
+                    #081d58,
+                    #006eff,
+                    #00cfff,
+                    #4dde8b,
+                    #ffe45f,
+                    #ff8638,
+                    #cb253c
+                );
+        }
+
+        .legend-labels {
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            color: #7189a2;
+            font-size: 9px;
+        }
+
+        /* =========================================================
+           BOTTOM STATUS BAR
+        ========================================================= */
+
+        .bottom-bar {
+            position: absolute;
+            z-index: 700;
+            left: 18px;
+            bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            flex-wrap: wrap;
+        }
+
+        .status-pill {
+            background: rgba(7, 17, 31, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #9db0c5;
+            border-radius: 999px;
+            padding: 8px 11px;
+            font-size: 10px;
+        }
+
+        /* =========================================================
+           LOADING
+        ========================================================= */
+
+        .loading {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(4, 10, 18, 0.72);
+            backdrop-filter: blur(5px);
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .loading-card {
+            background: #0c1d32;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 24px;
+            min-width: 240px;
+            text-align: center;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.14);
+            border-top-color: #00b7ff;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        .loading-text {
+            font-size: 12px;
+            color: #b9cadc;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* =========================================================
+           LEAFLET
+        ========================================================= */
+
+        .leaflet-control-zoom {
+            border: none !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        .leaflet-control-zoom a {
+            background: rgba(7, 17, 31, 0.9) !important;
+            color: #d7e5f4 !important;
+            border: none !important;
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(7, 17, 31, 0.76) !important;
+            color: #7189a0 !important;
+        }
+
+        .leaflet-control-attribution a {
+            color: #8ea9c2 !important;
+        }
+
+        /* =========================================================
+           RESPONSIVE
+        ========================================================= */
+
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 285px;
+            }
+
+            .map-overlay {
+                width: 200px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .app {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 320px;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+
+            .map-section {
+                min-height: 0;
+            }
+
+            .map-overlay {
+                top: 10px;
+                right: 10px;
+                width: 185px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- =========================================================
+         HEADER
+    ========================================================= -->
+
+    <header class="topbar">
+
+        <div class="brand">
+            <div class="logo">O</div>
+
+            <div class="brand-text">
+                <h1>ORCA</h1>
+                <span>Ocean Intelligence Platform</span>
+            </div>
+        </div>
+
+        <div class="system-status">
+            <div id="statusDot" class="status-dot"></div>
+            <span id="systemStatus">Connecting to Marine Gateway...</span>
+        </div>
+
+    </header>
+
+
+    <!-- =========================================================
+         MAIN APP
+    ========================================================= -->
+
+    <main class="app">
+
+        <!-- =====================================================
+             SIDEBAR
+        ===================================================== -->
+
+        <aside class="sidebar">
+
+            <section class="section">
+
+                <h2 class="section-title">
+                    Marine Parameter
+                </h2>
+
+                <div class="parameter-grid">
+
+                    <button
+                        class="parameter-btn active"
+                        data-parameter="sst"
+                        onclick="selectParameter('sst')"
+                    >
+                        <span class="parameter-name">
+                            Sea Surface Temperature
+                        </span>
+
+                        <span class="parameter-key">
+                            SST
+                        </span>
+                    </button>
+
+
+                    <button
+                        class="parameter-btn"
+                        data-parameter="currents"
+                        onclick="selectParameter('currents')"
+                    >
+                        <span class="parameter-name">
+                            Ocean Currents
+                        </span>
+
+                        <span class="parameter-key">
+                            CURRENT
+                        </span>
+                    </button>
+
+
+                    <button
+                        class="parameter-btn"
+                        data-parameter="waves"
+                        onclick="selectParameter('waves')"
+                    >
+                        <span class="parameter-name">
+                            Wave Height
+                        </span>
+
+                        <span class="parameter-key">
+                            WAVE
+                        </span>
+                    </button>
+
+
+                    <button
+                        class="parameter-btn"
+                        data-parameter="chlorophyll"
+                        onclick="selectParameter('chlorophyll')"
+                    >
+                        <span class="parameter-name">
+                            Chlorophyll
+                        </span>
+
+                        <span class="parameter-key">
+                            CHL
+                        </span>
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 LOCATION
+            ================================================== -->
+
+            <section class="section">
+
+                <h2 class="section-title">
+                    Location
+                </h2>
+
+                <div class="control-group">
+
+                    <div class="coordinate-grid">
+
+                        <div>
+                            <label for="latitude">
+                                Latitude
+                            </label>
+
+                            <input
+                                id="latitude"
+                                type="number"
+                                value="17.6935"
+                                step="0.0001"
+                            />
+                        </div>
+
+
+                        <div>
+                            <label for="longitude">
+                                Longitude
+                            </label>
+
+                            <input
+                                id="longitude"
+                                type="number"
+                                value="83.2921"
+                                step="0.0001"
+                            />
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="action-btn"
+                        onclick="loadPointData()"
+                    >
+                        Analyse Location
+                    </button>
+
+
+                    <button
+                        class="secondary-btn"
+                        onclick="goToVisakhapatnam()"
+                    >
+                        Go to Visakhapatnam
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 DATA SUMMARY
+            ================================================== -->
+
+            <section class="section">
+
+                <h2 class="section-title">
+                    Marine Intelligence
+                </h2>
+
+                <div class="data-card">
+
+                    <div class="data-status">
+
+                        <div class="data-status-title">
+                            Observation
+                        </div>
+
+                        <div
+                            id="dataBadge"
+                            class="badge"
+                        >
+                            READY
+                        </div>
+
+                    </div>
+
+
+                    <div id="dataContent">
+
+                        <div class="empty-state">
+                            Select a marine parameter or analyse a
+                            location to retrieve live Copernicus data.
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 API INFORMATION
+            ================================================== -->
+
+            <section class="section">
+
+                <h2 class="section-title">
+                    Backend
+                </h2>
+
+                <div class="data-card">
+
+                    <div class="metric">
+
+                        <div class="metric-label">
+                            Marine Gateway
+                        </div>
+
+                        <div
+                            id="apiStatus"
+                            class="metric-value"
+                            style="font-size: 13px;"
+                        >
+                            Checking...
+                        </div>
+
+                    </div>
+
+
+                    <div class="metric">
+
+                        <div class="metric-label">
+                            Active parameter
+                        </div>
+
+                        <div
+                            id="activeParameter"
+                            class="metric-value"
+                            style="font-size: 15px;"
+                        >
+                            SST
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </aside>
+
+
+        <!-- =====================================================
+             MAP
+        ====================================================== -->
+
+        <section class="map-section">
+
+            <div id="map"></div>
+
+
+            <!-- Map information -->
+            <div class="map-overlay">
+
+                <div class="glass-card">
+
+                    <h3 class="map-card-title">
+                        Active Layer
+                    </h3>
+
+                    <div
+                        id="layerStatus"
+                        class="layer-status"
+                    >
+                        Loading SST layer...
+                    </div>
+
+                </div>
+
+
+                <div class="glass-card">
+
+                    <h3 class="map-card-title">
+                        Data Source
+                    </h3>
+
+                    <div class="layer-status">
+                        Copernicus Marine Service
+                    </div>
+
+                    <div
+                        id="datasetInfo"
+                        style="
+                            margin-top:7px;
+                            font-size:9px;
+                            color:#6f879f;
+                            line-height:1.5;
+                        "
+                    >
+                        Numerical ocean model data
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Legend -->
+            <div
+                id="legend"
+                class="legend"
+            >
+
+                <div class="legend-title">
+                    Parameter intensity
+                </div>
+
+                <div class="legend-bar"></div>
+
+                <div class="legend-labels">
+                    <span>Low</span>
+                    <span>Medium</span>
+                    <span>High</span>
+                </div>
+
+            </div>
+
+
+            <!-- Bottom map status -->
+            <div class="bottom-bar">
+
+                <div class="status-pill">
+                    MODE:
+                    <strong id="modeText">
+                        LIVE
+                    </strong>
+                </div>
+
+                <div class="status-pill">
+                    LAT:
+                    <strong id="mapLat">
+                        17.6935
+                    </strong>
+                </div>
+
+                <div class="status-pill">
+                    LON:
+                    <strong id="mapLon">
+                        83.2921
+                    </strong>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================================================
+         LOADING
+    ========================================================== -->
+
+    <div
+        id="loading"
+        class="loading"
+    >
+
+        <div class="loading-card">
+
+            <div class="spinner"></div>
+
+            <div
+                id="loadingText"
+                class="loading-text"
+            >
+                Loading marine data...
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         LEAFLET JS
+    ========================================================== -->
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+
+
+    <script>
+
+        /* =========================================================
+           CONFIGURATION
+        ========================================================= */
+
+        const API = "http://127.0.0.1:8000";
+
+        let activeParameter = "sst";
+
+        let marineLayer = null;
+
+        let pointMarker = null;
+
+
+        /* =========================================================
+           MAP INITIALIZATION
+        ========================================================= */
+
+        const map = L.map("map", {
+            zoomControl: true,
+            preferCanvas: true
+        }).setView(
+            [16.8, 82.8],
+            6
+        );
+
+
+        const baseLayer = L.tileLayer(
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+                attribution: "&copy; OpenStreetMap contributors"
+            }
+        );
+
+        baseLayer.addTo(map);
+
+
+        /* =========================================================
+           HELPERS
+        ========================================================= */
+
+        function showLoading(message) {
+
+            document.getElementById("loadingText").textContent =
+                message || "Loading marine data...";
+
+            document
+                .getElementById("loading")
+                .classList
+                .add("show");
+        }
+
+
+        function hideLoading() {
+
+            document
+                .getElementById("loading")
+                .classList
+                .remove("show");
+        }
+
+
+        function setSystemStatus(
+            message,
+            healthy = true
+        ) {
+
+            document.getElementById(
+                "systemStatus"
+            ).textContent = message;
+
+            const dot =
+                document.getElementById("statusDot");
+
+            dot.classList.toggle(
+                "error",
+                !healthy
+            );
+
+            document.getElementById(
+                "apiStatus"
+            ).textContent =
+                healthy
+                    ? "ONLINE"
+                    : "OFFLINE";
+        }
+
+
+        function setBadge(
+            text,
+            type = "normal"
+        ) {
+
+            const badge =
+                document.getElementById("dataBadge");
+
+            badge.textContent = text;
+
+            badge.className = "badge";
+
+            if (type === "partial") {
+                badge.classList.add("partial");
+            }
+
+            if (type === "error") {
+                badge.classList.add("error");
+            }
+        }
+
+
+        function safeNumber(
+            value,
+            digits = 2
+        ) {
+
+            if (
+                value === null ||
+                value === undefined ||
+                Number.isNaN(Number(value))
+            ) {
+                return "N/A";
+            }
+
+            return Number(value).toFixed(digits);
+        }
+
+
+        function parameterDisplayName(
+            parameter
+        ) {
+
+            const names = {
+                sst: "Sea Surface Temperature",
+                currents: "Ocean Currents",
+                waves: "Wave Height",
+                chlorophyll: "Chlorophyll"
+            };
+
+            return names[parameter] || parameter;
+        }
+
+
+        /* =========================================================
+           API HEALTH
+        ========================================================= */
+
+        async function checkAPI() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API}/health`,
+                        {
+                            method: "GET"
+                        }
+                    );
+
+                if (!response.ok) {
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
+                }
+
+                const data =
+                    await response.json();
+
+                setSystemStatus(
+                    "Marine Gateway online",
+                    true
+                );
+
+                return data;
+
+            } catch (error) {
+
+                console.error(
+                    "API health error:",
+                    error
+                );
+
+                setSystemStatus(
+                    "Marine Gateway unavailable",
+                    false
+                );
+
+                return null;
+            }
+        }
+
+
+        /* =========================================================
+           PARAMETER SELECTION
+        ========================================================= */
+
+        async function selectParameter(
+            parameter
+        ) {
+
+            activeParameter = parameter;
+
+            document
+                .querySelectorAll(
+                    ".parameter-btn"
+                )
+                .forEach(button => {
+
+                    button.classList.toggle(
+                        "active",
+                        button.dataset.parameter ===
+                            parameter
+                    );
+
+                });
+
+
+            document.getElementById(
+                "activeParameter"
+            ).textContent =
+                parameterDisplayName(
+                    parameter
+                );
+
+
+            document.getElementById(
+                "layerStatus"
+            ).textContent =
+                `Loading ${parameterDisplayName(parameter)} layer...`;
+
+
+            document.getElementById(
+                "dataContent"
+            ).innerHTML =
+                `
+                    <div class="empty-state">
+                        Loading marine information...
+                    </div>
+                `;
+
+
+            await loadMarineLayer(
+                parameter
+            );
+        }
+
+
+        /* =========================================================
+           GET MAP CONFIG
+        ========================================================= */
+
+        async function loadMarineConfig(
+            parameter
+        ) {
+
+            const response =
+                await fetch(
+                    `${API}/marine/map/config/${encodeURIComponent(parameter)}`
+                );
+
+            if (!response.ok) {
+
+                const text =
+                    await response.text();
+
+                throw new Error(
+                    `Config request failed: HTTP ${response.status} ${text}`
+                );
+            }
+
+            return await response.json();
+        }
+
+
+        /* =========================================================
+           LOAD MARINE WMTS LAYER
+        ========================================================= */
+
+        async function loadMarineLayer(
+            parameter
+        ) {
+
+            try {
+
+                showLoading(
+                    `Loading ${parameterDisplayName(parameter)} map...`
+                );
+
+
+                const config =
+                    await loadMarineConfig(
+                        parameter
+                    );
+
+
+                console.log(
+                    "Marine layer config:",
+                    config
+                );
+
+
+                if (marineLayer !== null) {
+
+                    map.removeLayer(
+                        marineLayer
+                    );
+
+                    marineLayer = null;
+                }
+
+
+                if (
+                    !config ||
+                    !config.tile_url
+                ) {
+
+                    throw new Error(
+                        "Marine layer configuration does not contain tile_url."
+                    );
+                }
+
+
+                marineLayer =
+                    L.tileLayer(
+                        config.tile_url,
+                        {
+                            opacity:
+                                config.opacity ??
+                                0.72,
+
+                            tileSize:
+                                config.tile_size ??
+                                256,
+
+                            maxZoom : 18,
+
+                            minZoom : 2,
+
+                            crossOrigin:
+                                true,
+
+                            attribution:
+                                config.attribution ||
+                                "Copernicus Marine Service"
+                        }
+                    );
+
+
+                marineLayer.addTo(
+                    map
+                );
+
+
+                document.getElementById(
+                    "layerStatus"
+                ).textContent =
+                    config.title ||
+                    parameterDisplayName(
+                        parameter
+                    );
+
+
+                document.getElementById(
+                    "datasetInfo"
+                ).textContent =
+                    config.dataset_id ||
+                    "Copernicus Marine numerical data";
+
+
+                document
+                    .getElementById("legend")
+                    .style.display =
+                    "block";
+
+
+                setBadge(
+                    "LIVE",
+                    "normal"
+                );
+
+
+                console.log(
+                    "Marine layer loaded successfully."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Marine layer error:",
+                    error
+                );
+
+
+                document.getElementById(
+                    "layerStatus"
+                ).textContent =
+                    "Marine layer unavailable";
+
+
+                document.getElementById(
+                    "dataContent"
+                ).innerHTML =
+                    `
+                        <div class="empty-state">
+                            The selected Copernicus map layer could not
+                            be loaded.<br><br>
+                            ${escapeHTML(error.message)}
+                        </div>
+                    `;
+
+
+                setBadge(
+                    "ERROR",
+                    "error"
+                );
+
+            } finally {
+
+                hideLoading();
+            }
+        }
+
+
+        /* =========================================================
+           POINT DATA
+        ========================================================= */
+
+        async function loadPointData() {
+
+            const latitude =
+                Number(
+                    document.getElementById(
+                        "latitude"
+                    ).value
+                );
+
+            const longitude =
+                Number(
+                    document.getElementById(
+                        "longitude"
+                    ).value
+                );
+
+
+            if (
+                !Number.isFinite(latitude) ||
+                !Number.isFinite(longitude)
+            ) {
+
+                alert(
+                    "Please enter valid latitude and longitude."
+                );
+
+                return;
+            }
+
+
+            if (
+                latitude < -90 ||
+                latitude > 90 ||
+                longitude < -180 ||
+                longitude > 180
+            ) {
+
+                alert(
+                    "Latitude must be between -90 and 90 and longitude between -180 and 180."
+                );
+
+                return;
+            }
+
+
+            document.getElementById(
+                "mapLat"
+            ).textContent =
+                latitude.toFixed(4);
+
+            document.getElementById(
+                "mapLon"
+            ).textContent =
+                longitude.toFixed(4);
+
+
+            map.setView(
+                [
+                    latitude,
+                    longitude
+                ],
+                8
+            );
+
+
+            if (pointMarker !== null) {
+
+                map.removeLayer(
+                    pointMarker
+                );
+            }
+
+
+            pointMarker =
+                L.marker(
+                    [
+                        latitude,
+                        longitude
+                    ]
+                )
+                .addTo(map)
+                .bindPopup(
+                    `
+                    <strong>ORCA Analysis Point</strong><br>
+                    Latitude: ${latitude.toFixed(4)}<br>
+                    Longitude: ${longitude.toFixed(4)}
+                    `
+                );
+
+
+            pointMarker.openPopup();
+
+
+            try {
+
+                showLoading(
+                    "Retrieving Copernicus marine observations..."
+                );
+
+
+                const response =
+                    await fetch(
+                        `${API}/marine/point?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`
+                    );
+
+
+                if (!response.ok) {
+
+                    const text =
+                        await response.text();
+
+                    throw new Error(
+                        `HTTP ${response.status}: ${text}`
+                    );
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Point data:",
+                    data
+                );
+
+
+                renderPointData(
+                    data
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Point data error:",
+                    error
+                );
+
+
+                setBadge(
+                    "ERROR",
+                    "error"
+                );
+
+
+                document.getElementById(
+                    "dataContent"
+                ).innerHTML =
+                    `
+                    <div class="empty-state">
+                        Unable to retrieve marine observations.<br><br>
+                        ${escapeHTML(error.message)}
+                    </div>
+                    `;
+
+            } finally {
+
+                hideLoading();
+            }
+        }
+
+
+        /* =========================================================
+           RENDER POINT DATA
+        ========================================================= */
+
+        function renderPointData(
+            data
+        ) {
+
+            const sst =
+                data.sst || {};
+
+            const current =
+                data.current || {};
+
+            const wave =
+                data.wave || {};
+
+            const overallStatus =
+                data.status ||
+                data.overall_status ||
+                "OBSERVED";
+
+
+            const sstValue =
+                sst.value;
+
+            const currentSpeed =
+                current.speed;
+
+            const currentDirection =
+                current.direction;
+
+            const waveHeight =
+                wave.height;
+
+            const wavePeriod =
+                wave.period;
+
+            const waveDirection =
+                wave.direction;
+
+
+            let statusType =
+                "normal";
+
+
+            if (
+                String(overallStatus)
+                    .toUpperCase()
+                    .includes("PARTIAL")
+            ) {
+
+                statusType =
+                    "partial";
+            }
+
+
+            if (
+                String(overallStatus)
+                    .toUpperCase()
+                    .includes("NO_DATA")
+            ) {
+
+                statusType =
+                    "error";
+            }
+
+
+            setBadge(
+                String(overallStatus)
+                    .toUpperCase(),
+                statusType
+            );
+
+
+            document.getElementById(
+                "dataContent"
+            ).innerHTML =
+                `
+
+                <div class="metric">
+
+                    <div class="metric-label">
+                        Sea Surface Temperature
+                    </div>
+
+                    <div class="metric-value">
+                        ${
+                            safeNumber(
+                                sstValue,
+                                2
+                            )
+                        }
+                        <span
+                            style="
+                                font-size:11px;
+                                color:#7d94ad;
+                            "
+                        >
+                            °C
+                        </span>
+                    </div>
+
+                    <div class="metric-sub">
+                        ${
+                            sst.observation_time ||
+                            "Observation time unavailable"
+                        }
+                    </div>
+
+                </div>
+
+
+                <div class="metric">
+
+                    <div class="metric-label">
+                        Current Speed
+                    </div>
+
+                    <div class="metric-value">
+                        ${
+                            safeNumber(
+                                currentSpeed,
+                                3
+                            )
+                        }
+                        <span
+                            style="
+                                font-size:11px;
+                                color:#7d94ad;
+                            "
+                        >
+                            m/s
+                        </span>
+                    </div>
+
+                    <div class="metric-sub">
+                        Direction:
+                        ${
+                            safeNumber(
+                                currentDirection,
+                                1
+                            )
+                        }°
+                    </div>
+
+                </div>
+
+
+                <div class="metric">
+
+                    <div class="metric-label">
+                        Significant Wave Height
+                    </div>
+
+                    <div class="metric-value">
+                        ${
+                            safeNumber(
+                                waveHeight,
+                                2
+                            )
+                        }
+                        <span
+                            style="
+                                font-size:11px;
+                                color:#7d94ad;
+                            "
+                        >
+                            m
+                        </span>
+                    </div>
+
+                    <div class="metric-sub">
+                        Period:
+                        ${
+                            safeNumber(
+                                wavePeriod,
+                                2
+                            )
+                        } s
+                        &nbsp; | &nbsp;
+                        Direction:
+                        ${
+                            safeNumber(
+                                waveDirection,
+                                1
+                            )
+                        }°
+                    </div>
+
+                </div>
+
+                `;
+        }
+
+
+        /* =========================================================
+           VISAKHAPATNAM
+        ========================================================= */
+
+        function goToVisakhapatnam() {
+
+            const lat = 17.6935526;
+            const lon = 83.2921297;
+
+
+            document.getElementById(
+                "latitude"
+            ).value =
+                lat;
+
+
+            document.getElementById(
+                "longitude"
+            ).value =
+                lon;
+
+
+            map.setView(
+                [
+                    lat,
+                    lon
+                ],
+                9
+            );
+
+
+            if (pointMarker !== null) {
+
+                map.removeLayer(
+                    pointMarker
+                );
+            }
+
+
+            pointMarker =
+                L.marker(
+                    [
+                        lat,
+                        lon
+                    ]
+                )
+                .addTo(map)
+                .bindPopup(
+                    `
+                    <strong>Visakhapatnam</strong><br>
+                    ORCA marine analysis point
+                    `
+                );
+
+
+            pointMarker.openPopup();
+
+
+            loadPointData();
+        }
+
+
+        /* =========================================================
+           HTML ESCAPING
+        ========================================================= */
+
+        function escapeHTML(
+            value
+        ) {
+
+            return String(value)
+                .replaceAll(
+                    "&",
+                    "&amp;"
+                )
+                .replaceAll(
+                    "<",
+                    "&lt;"
+                )
+                .replaceAll(
+                    ">",
+                    "&gt;"
+                )
+                .replaceAll(
+                    '"',
+                    "&quot;"
+                )
+                .replaceAll(
+                    "'",
+                    "&#039;"
+                );
+        }
+
+
+        /* =========================================================
+           MAP CLICK
+        ========================================================= */
+
+        map.on(
+            "click",
+            function (event) {
+
+                const lat =
+                    event.latlng.lat;
+
+                const lon =
+                    event.latlng.lng;
+
+
+                document.getElementById(
+                    "latitude"
+                ).value =
+                    lat.toFixed(4);
+
+
+                document.getElementById(
+                    "longitude"
+                ).value =
+                    lon.toFixed(4);
+
+
+                document.getElementById(
+                    "mapLat"
+                ).textContent =
+                    lat.toFixed(4);
+
+
+                document.getElementById(
+                    "mapLon"
+                ).textContent =
+                    lon.toFixed(4);
+
+
+                if (pointMarker !== null) {
+
+                    map.removeLayer(
+                        pointMarker
+                    );
+                }
+
+
+                pointMarker =
+                    L.marker(
+                        [
+                            lat,
+                            lon
+                        ]
+                    )
+                    .addTo(map)
+                    .bindPopup(
+                        `
+                        <strong>ORCA Analysis Point</strong><br>
+                        ${lat.toFixed(4)}, ${lon.toFixed(4)}
+                        `
+                    );
+
+
+                pointMarker.openPopup();
+
+
+                loadPointData();
+            }
+        );
+
+
+        /* =========================================================
+           INITIALIZE
+        ========================================================= */
+
+        async function initialize() {
+
+            await checkAPI();
+
+
+            try {
+
+                await loadMarineLayer(
+                    "sst"
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Initial layer load failed:",
+                    error
+                );
+            }
+
+
+            // Load Visakhapatnam observations
+            await loadPointData();
+        }
+
+
+        initialize();
+
+    </script>
+
+</body>
+</html>
