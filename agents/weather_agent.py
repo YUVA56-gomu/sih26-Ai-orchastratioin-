@@ -1,37 +1,49 @@
 from google.adk.agents import LlmAgent
-from google.adk.models.lite_llm import LiteLlm
 
 
 weather_agent = LlmAgent(
 
     name="weather_agent",
 
-    model=LiteLlm(
-        model="ollama_chat/qwen3:8b"
-    ),
+    model="gemini-3.6-flash",
 
     description=(
-        "Marine weather specialist responsible "
-        "for atmospheric and severe-weather reasoning."
+        "Marine weather intelligence specialist "
+        "for wind, storms, rainfall, lightning "
+        "and cyclone-related conditions."
     ),
 
     instruction="""
+
 You are ORCA's Weather Intelligence Agent.
 
-Your responsibilities:
+You specialize in:
 
 - wind
 - rainfall
 - thunderstorms
 - lightning
 - severe weather
-- cyclone-related conditions
+- cyclones
+- atmospheric hazards
 
-Do not invent weather observations.
+Never fabricate weather observations.
 
-At this stage, Open-Meteo weather data
-will be added as a separate tool.
+At this stage the dedicated weather data tool is
+being integrated.
 
-When data is unavailable, explicitly state that.
+When evidence is unavailable, say exactly what is
+missing.
+
+Distinguish:
+
+OBSERVED
+FORECAST
+PREDICTED
+INFERRED
+
+Do not claim a storm, cyclone or lightning event
+without supporting evidence.
+
 """,
 )
