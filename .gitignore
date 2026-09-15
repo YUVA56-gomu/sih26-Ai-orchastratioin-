@@ -4,5 +4,18 @@
 # ignore .adk files
 .adk/
 
-#ignore .env files
+# ignore .env files
 .env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
