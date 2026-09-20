@@ -174,6 +174,17 @@ SAMUDRA AI implements comprehensive ocean hydrodynamics data collection and risk
 * **Hydrodynamics Risk Scoring**: `calculate_marine_risk()` deterministically evaluates strong ocean current velocity ($\ge 1.5$ m/s) and steep short-period wave hazards ($VHM0 \ge 1.5$ m AND $VTM02 \le 5.0$ s).
 * **`ocean_card` Artifact**: `create_ocean_conditions_artifact()` produces structured UI cards containing location, SST, salinity, surface currents, multi-depth current profile array, wave spectrum, and ISO-8601 provenance entries.
 
+### 3.5 PFZ & Fishery Intelligence Architecture (Phase 2.3)
+
+SAMUDRA AI implements an evidence-grounded spatial PFZ intelligence pipeline:
+
+* **BGC Chlorophyll-a Integration**: `get_chlorophyll()` retrieves ocean productivity data from Copernicus BGC dataset `cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m` (variable `chl` in $\text{mg/m}^3$, classified as `MODEL_ANALYSIS`).
+* **Spatial Grid Slicing**: `get_copernicus_grid()` extracts 2D spatial grid arrays ($\pm 0.5^\circ$) around target coordinates for SST (0.083° resolution) and Chlorophyll (0.25° resolution).
+* **Spatial Gradient Front Detection**: `detect_thermal_fronts()` and `analyze_chlorophyll_productivity()` compute 2D spatial gradients ($\nabla \text{SST}$ in $^\circ\text{C/km}$ and $\nabla \text{CHL}$ in $\text{mg/m}^3\text{/km}$) using `numpy.gradient` with physical distance scaling ($\Delta\text{lon} \times 111.0 \times \cos(\text{lat})$).
+* **Deterministic Candidate Scoring**: `calculate_candidate_score()` evaluates candidate points using weighted scoring components: SST suitability ($26^\circ\text{C}-29^\circ\text{C}$ Gaussian window), SST front strength ($\ge 0.05^\circ\text{C/km}$), Chlorophyll concentration, Chlorophyll gradient, distance, and optional INCOIS alignment.
+* **INCOIS Bulletin Structure**: `parse_incois_bulletin()` provides standardized schema handling for official bulletin records, returning status `UNAVAILABLE` when no live feed is configured without failing downstream analysis.
+* **Enriched `pfz_map` Artifact**: `create_pfz_map_artifact()` exports multi-candidate zones, thermal fronts, chlorophyll features, bulletin status, and data provenance entries.
+
 ---
 
 ## 4. ARTIFACT PROTOCOL

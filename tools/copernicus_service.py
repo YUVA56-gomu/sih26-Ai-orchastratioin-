@@ -56,6 +56,10 @@ WAVE_DATASET = (
     "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i"
 )
 
+CHLOROPHYLL_DATASET = (
+    "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m"
+)
+
 
 # ============================================================
 # DATASET SURFACE
@@ -72,6 +76,7 @@ SALINITY_LOOKBACK_HOURS = 72
 TEMPERATURE_LOOKBACK_HOURS = 72
 CURRENT_LOOKBACK_HOURS = 72
 WAVE_LOOKBACK_HOURS = 48
+CHLOROPHYLL_LOOKBACK_HOURS = 72
 
 POINT_WINDOW_DEGREES = 0.05
 
@@ -840,6 +845,76 @@ def get_current_profile(
 
         "dataset_id":
             CURRENT_DATASET,
+    }
+
+
+# ============================================================
+# CHLOROPHYLL-A
+# ============================================================
+
+def get_chlorophyll(
+    latitude: float,
+    longitude: float,
+) -> dict[str, Any]:
+
+    dataset = open_small_dataset(
+
+        dataset_id=CHLOROPHYLL_DATASET,
+
+        variables=[
+            "chl"
+        ],
+
+        latitude=latitude,
+        longitude=longitude,
+
+        hours_back=(
+            CHLOROPHYLL_LOOKBACK_HOURS
+        ),
+
+        surface_data=True,
+    )
+
+
+    result = latest_value(
+
+        dataset,
+
+        "chl",
+
+        latitude,
+        longitude,
+    )
+
+
+    return {
+
+        "parameter":
+            "chlorophyll_a",
+
+        "value":
+            result["value"],
+
+        "unit":
+            "mg/m3",
+
+        "variable":
+            "chl",
+
+        "latitude":
+            latitude,
+
+        "longitude":
+            longitude,
+
+        "status":
+            "MODEL_ANALYSIS",
+
+        "observation_time":
+            result["observation_time"],
+
+        "dataset_id":
+            CHLOROPHYLL_DATASET,
     }
 
 

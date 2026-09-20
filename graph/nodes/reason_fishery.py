@@ -32,8 +32,10 @@ def fishery_reasoning_node(state: SamudraState) -> SamudraState:
     query = state.get("query_in_english") or state.get("user_query", "")
     context = (
         f"USER QUERY: {query}\n\n"
-        f"FISHERY/PFZ DATA:\n{json.dumps(fishery, indent=2)[:800]}\n\n"
-        f"OCEAN DATA (for SST context):\n{json.dumps(ocean, indent=2)[:600]}"
+        f"FISHERY/PFZ DATA (thermal fronts, chlorophyll, candidate scores, INCOIS status):\n"
+        f"{json.dumps(fishery, indent=2)[:2500]}\n\n"
+        f"OCEAN DATA (SST & Hydrodynamics context):\n"
+        f"{json.dumps(ocean, indent=2)[:1500]}"
     )
 
     try:

@@ -52,6 +52,10 @@ WAVE_DATASET = (
     "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i"
 )
 
+CHLOROPHYLL_DATASET = (
+    "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m"
+)
+
 
 SURFACE_DEPTH = 0.49402499198913574
 
@@ -657,6 +661,111 @@ def get_wave_grid(
 
 
 # ============================================================
+# CHLOROPHYLL GRID
+# ============================================================
+
+def get_chlorophyll_grid(
+    *,
+    minimum_latitude: float,
+    maximum_latitude: float,
+    minimum_longitude: float,
+    maximum_longitude: float,
+) -> dict[str, Any]:
+
+    dataset = open_grid_dataset(
+
+        dataset_id=
+            CHLOROPHYLL_DATASET,
+
+        variables=[
+            "chl"
+        ],
+
+        minimum_latitude=
+            minimum_latitude,
+
+        maximum_latitude=
+            maximum_latitude,
+
+        minimum_longitude=
+            minimum_longitude,
+
+        maximum_longitude=
+            maximum_longitude,
+
+        hours_back=72,
+
+        surface_data=True,
+    )
+
+
+    data, observation_time = (
+        select_latest_surface(
+            dataset["chl"]
+        )
+    )
+
+
+    values = np.asarray(
+        data.values,
+        dtype=np.float32,
+    )
+
+
+    latitudes = (
+        data.coords[
+            "latitude"
+        ].values
+    )
+
+    longitudes = (
+        data.coords[
+            "longitude"
+        ].values
+    )
+
+
+    return {
+
+        "parameter":
+            "chlorophyll_a",
+
+        "short_name":
+            "chlorophyll",
+
+        "unit":
+            "mg/m3",
+
+        "status":
+            "MODEL_ANALYSIS",
+
+        "observation_time":
+            observation_time,
+
+        "dataset_id":
+            CHLOROPHYLL_DATASET,
+
+        "latitudes":
+            serialize_array(
+                latitudes
+            ),
+
+        "longitudes":
+            serialize_array(
+                longitudes
+            ),
+
+        "values":
+            serialize_array(
+                values
+            ),
+
+        "shape":
+            list(values.shape),
+    }
+
+
+# ============================================================
 # GENERIC GRID FUNCTION
 # ============================================================
 
@@ -737,10 +846,32 @@ def get_copernicus_grid(
         )
 
 
+    if parameter in {
+        "chlorophyll",
+        "chlorophyll_a",
+        "chl",
+    }:
+
+        return get_chlorophyll_grid(
+
+            minimum_latitude=
+                minimum_latitude,
+
+            maximum_latitude=
+                maximum_latitude,
+
+            minimum_longitude=
+                minimum_longitude,
+
+            maximum_longitude=
+                maximum_longitude,
+        )
+
+
     raise ValueError(
 
         f"Unsupported parameter: {parameter}. "
 
         "Supported parameters: "
-        "sst, currents, waves."
+        "sst, currents, waves, chlorophyll."
     )

@@ -55,7 +55,7 @@ def create_location_card_artifact(location: dict[str, Any]) -> Optional[dict[str
 
 
 def create_pfz_map_artifact(location: dict[str, Any], fishery_data: dict[str, Any]) -> Optional[dict[str, Any]]:
-    """Build a Potential Fishing Zone (PFZ) map artifact."""
+    """Build an enriched Potential Fishing Zone (PFZ) map artifact."""
     if not isinstance(location, dict) or location.get("status") != "FOUND":
         return None
     lat = location.get("latitude")
@@ -72,9 +72,13 @@ def create_pfz_map_artifact(location: dict[str, Any], fishery_data: dict[str, An
                 "latitude": lat,
                 "longitude": lon,
             },
-            "pfz_status": fishery_data.get("pfz_status", fishery_data.get("status", "Calculated")),
+            "pfz_status": fishery_data.get("pfz_status", fishery_data.get("status", "CALCULATED")),
             "candidates": fishery_data.get("candidates") or fishery_data.get("pfz_candidates", []),
-            "recommendation": fishery_data.get("recommendation", ""),
+            "thermal_fronts": fishery_data.get("thermal_fronts", []),
+            "chlorophyll_features": fishery_data.get("chlorophyll_features", []),
+            "bulletin": fishery_data.get("bulletin", {"source": "INCOIS", "status": "UNAVAILABLE"}),
+            "provenance": fishery_data.get("provenance", []),
+            "recommendation": fishery_data.get("recommendation", fishery_data.get("important", "")),
         },
     )
 
