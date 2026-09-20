@@ -37,21 +37,29 @@ def _stub_langgraph():
         return sys.modules[name]
 
     # langgraph
-    lg       = _mod("langgraph")
-    lg_graph = _mod("langgraph.graph")
-    lg_graph.StateGraph = MagicMock
-    lg_graph.START = "__start__"
-    lg_graph.END   = "__end__"
-    _mod("langgraph.checkpoint")
-    lg_mem = _mod("langgraph.checkpoint.memory")
-    lg_mem.MemorySaver = MagicMock
+    try:
+        import langgraph.graph
+        import langgraph.checkpoint.memory
+    except ImportError:
+        lg       = _mod("langgraph")
+        lg_graph = _mod("langgraph.graph")
+        lg_graph.StateGraph = MagicMock
+        lg_graph.START = "__start__"
+        lg_graph.END   = "__end__"
+        _mod("langgraph.checkpoint")
+        lg_mem = _mod("langgraph.checkpoint.memory")
+        lg_mem.MemorySaver = MagicMock
 
     # langchain_core
-    _mod("langchain_core")
-    _mod("langchain_core.messages")
-    lc_msgs = sys.modules["langchain_core.messages"]
-    lc_msgs.HumanMessage  = MagicMock
-    lc_msgs.SystemMessage = MagicMock
+    try:
+        import langchain_core.messages
+    except ImportError:
+        _mod("langchain_core")
+        _mod("langchain_core.messages")
+        lc_msgs = sys.modules["langchain_core.messages"]
+        lc_msgs.HumanMessage  = MagicMock
+        lc_msgs.SystemMessage = MagicMock
+
 
     # langchain_google_genai / langchain_groq / langchain_ollama
     for mod in (

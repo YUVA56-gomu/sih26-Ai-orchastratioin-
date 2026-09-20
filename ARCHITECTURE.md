@@ -91,11 +91,45 @@ User turn: "What about tomorrow morning?"
   ↳ Context resolved: "What are the marine conditions [at nearest PFZ near Karwar] on [tomorrow morning]?"
 ```
 
+### 3.1 Persistent Storage Architecture (M1.5)
+
+SAMUDRA AI uses a local durable persistence layer (`storage/`) sitting below the client layer and around the LangGraph state machine:
+
+```text
+             WEB / FLUTTER / VOICE
+                       │
+                       ▼
+       SAMUDRA API / Conversation Engine
+                       │
+                conversation_id
+                       │
+                       ▼
+         Conversation Metadata Store
+         (storage/conversation_store.py)
+                       │
+                       ▼
+        SQLite Checkpointer (SqliteSaver)
+          (storage/sqlite_saver.py)
+                       │
+                       ▼
+               LangGraph State
+           /                     \
+       FAST ⚡                 DEEP 🧠
+           \                     /
+                  Response
+                     +
+                 Artifacts
+```
+
+* **`SqliteSaver` Checkpointer**: Safely persists and restores LangGraph state checkpoints (`checkpoints`, `checkpoint_blobs`, `checkpoint_writes`), keeping message history, `active_context` (location, selected artifact, active artifacts), `artifacts`, and `route_path` durable across backend process restarts.
+* **`ConversationStore` Repository**: Manages lightweight conversation index metadata (`conversations` table: `conversation_id`, `thread_id`, `title`, `created_at`, `updated_at`).
+* **Deterministic Title Generation**: Generates clean conversation titles directly from the initial user query without incurring additional LLM latency or cost.
+
 Conversation state tracks:
 * **Active Location & Coordinates**
 * **Active Activity (e.g. fishing, commercial navigation, diving)**
 * **Active Timeframe**
-* **Last Generated Artifact References**
+* **Last Generated Artifact References & Selections**
 
 ---
 

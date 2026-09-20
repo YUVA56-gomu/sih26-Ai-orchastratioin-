@@ -246,16 +246,23 @@ def build_graph() -> StateGraph:
     return g
 
 
-# ── Compiled singleton with in-memory checkpointer ────────────────────────────
-# MemorySaver enables multi-turn conversation memory via thread_id.
+# ── Compiled singleton with persistent SQLite checkpointer ────────────────────
+# SqliteSaver enables durable multi-turn conversation memory surviving restarts.
 
 _compiled = None
+_saver = None
 
 
-def get_compiled_graph():
-    """Return the compiled graph (singleton, thread-safe for single process)."""
-    global _compiled
-    if _compiled is None:
-        checkpointer = MemorySaver()
-        _compiled = build_graph().compile(checkpointer=checkpointer)
+def get_compiled_graph(db_path: str = "samudra_storage.db"):
+    """Return the compiled graph with persistent SqliteSaver checkpointer."""
+    global _compiled, _saver
+    if _compiled is None or (_saver and getattr(_saver, "db_path", None) != db_path):
+        if _saver is not None:
+            try:
+                _saver.close()
+            except Exception:
+                pass
+        from storage.sqlite_saver import SqliteSaver
+        _saver = SqliteSaver(db_path=db_path)
+        _compiled = build_graph().compile(checkpointer=_saver)
     return _compiled

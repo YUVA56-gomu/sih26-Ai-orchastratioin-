@@ -31,8 +31,18 @@ def format_recent_history(state: dict, max_messages: int = 6) -> str:
     recent = msgs[-max_messages:]
     formatted = []
     for m in recent:
-        role = m.get("role", "user").capitalize()
-        content = m.get("content") or m.get("text") or ""
+        if isinstance(m, dict):
+            role = m.get("role", "user").capitalize()
+            content = m.get("content") or m.get("text") or ""
+        else:
+            role_raw = getattr(m, "type", "user").lower()
+            if role_raw in ("human", "user"):
+                role = "User"
+            elif role_raw in ("ai", "assistant"):
+                role = "Assistant"
+            else:
+                role = role_raw.capitalize()
+            content = getattr(m, "content", str(m))
         if content:
             formatted.append(f"{role}: {content}")
 
@@ -40,6 +50,7 @@ def format_recent_history(state: dict, max_messages: int = 6) -> str:
         return ""
 
     return "Recent Conversation History:\n" + "\n".join(formatted)
+
 
 
 def format_active_context(state: dict) -> str:

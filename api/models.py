@@ -67,3 +67,17 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     service: str = "SAMUDRA.AI"
     version: str = "1.0.0-langgraph"
+
+
+class ConversationSummary(BaseModel):
+    conversation_id: str = Field(..., description="Public conversation identifier")
+    thread_id: str = Field(..., description="Internal LangGraph thread identifier")
+    title: str = Field(..., description="Deterministic conversation title")
+    created_at: str = Field(..., description="ISO 8601 creation timestamp")
+    updated_at: str = Field(..., description="ISO 8601 last updated timestamp")
+
+
+class ConversationDetail(ConversationSummary):
+    messages: list[dict[str, Any]] = Field(default_factory=list, description="Message history turns")
+    active_context: Optional[dict[str, Any]] = Field(default=None, description="Active context state")
+    artifacts: list[dict[str, Any]] = Field(default_factory=list, description="Associated UI artifacts")

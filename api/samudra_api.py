@@ -23,8 +23,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from api.models import ChatRequest, ChatResponse, HealthResponse
+from api.models import (
+    ChatRequest,
+    ChatResponse,
+    HealthResponse,
+    ConversationSummary,
+    ConversationDetail,
+)
 from graph.graph import get_compiled_graph
+from storage.conversation_store import ConversationStore
+
+conversation_store = ConversationStore()
 
 # Import marine data tools directly for unified gateway API
 from tools.copernicus_service import get_copernicus_marine_snapshot
@@ -280,6 +289,9 @@ async def chat(request: ChatRequest):
         conv_id = str(uuid.uuid4())
     t_id = conv_id
 
+    # Persist conversation metadata
+    conversation_store.get_or_create_conversation(conv_id, first_query=user_text)
+
     graph = get_compiled_graph()
 
     initial_state = {
@@ -310,6 +322,7 @@ async def chat(request: ChatRequest):
 
     try:
         result = await graph.ainvoke(initial_state, config=config)
+        conversation_store.touch_conversation(conv_id)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Graph execution error: {exc}")
 
@@ -336,6 +349,39 @@ async def chat(request: ChatRequest):
         errors=result.get("errors", []),
         location=result.get("location"),
         active_context=result.get("active_context"),
+    )
+
+
+@app.get("/conversations", response_model=list[ConversationSummary])
+async def list_conversations():
+    """List lightweight metadata for all persistent conversations."""
+    return conversation_store.list_conversations()
+
+
+@app.get("/conversations/{conversation_id}", response_model=ConversationDetail)
+async def get_conversation_detail(conversation_id: str):
+    """Retrieve metadata, messages, active context, and artifacts for a conversation."""
+    record = conversation_store.get_conversation(conversation_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    graph = get_compiled_graph()
+    config = {"configurable": {"thread_id": conversation_id}}
+    try:
+        state_tuple = graph.get_state(config)
+        values = state_tuple.values if state_tuple else {}
+    except Exception:
+        values = {}
+
+    return ConversationDetail(
+        conversation_id=record["conversation_id"],
+        thread_id=record["thread_id"],
+        title=record["title"],
+        created_at=record["created_at"],
+        updated_at=record["updated_at"],
+        messages=values.get("messages", []),
+        active_context=values.get("active_context"),
+        artifacts=values.get("artifacts", []),
     )
 
 
