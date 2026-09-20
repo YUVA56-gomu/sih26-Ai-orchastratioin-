@@ -381,8 +381,10 @@ async def get_conversation_detail(conversation_id: str):
         updated_at=record["updated_at"],
         messages=values.get("messages", []),
         active_context=values.get("active_context"),
+        context_summary=values.get("context_summary"),
         artifacts=values.get("artifacts", []),
     )
+
 
 
 @app.get("/chat/stream")

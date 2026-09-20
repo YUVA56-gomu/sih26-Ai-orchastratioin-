@@ -77,6 +77,7 @@ class SamudraState(TypedDict, total=False):
         operator.add                 # Append across turns (backward compatibility)
     ]
     active_context: ActiveContext     # Persistent active context across conversation turns
+    context_summary: Optional[str]   # Persistent rolling summary of older conversation turns
     route_path: str                  # Execution path taken: "FAST" | "DEEP"
     artifacts: Annotated[
         list[dict[str, Any]],

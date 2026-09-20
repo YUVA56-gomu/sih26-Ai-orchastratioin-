@@ -125,11 +125,21 @@ SAMUDRA AI uses a local durable persistence layer (`storage/`) sitting below the
 * **`ConversationStore` Repository**: Manages lightweight conversation index metadata (`conversations` table: `conversation_id`, `thread_id`, `title`, `created_at`, `updated_at`).
 * **Deterministic Title Generation**: Generates clean conversation titles directly from the initial user query without incurring additional LLM latency or cost.
 
+### 3.2 Context Management & Rolling Summarization (M1.6)
+
+SAMUDRA AI implements threshold-triggered rolling context summarization (`graph/nodes/summarizer.py`) to prevent prompt token ballooning across long multi-turn conversations:
+
+* **Trigger Threshold**: Summarization executes conditionally only when message history exceeds `SUMMARY_THRESHOLD_MESSAGES` (6 messages / 3 turns). Short conversations and simple Fast Path greetings below threshold execute with 0 summarization overhead.
+* **Rolling Summarization**: Condenses turns prior to `RECENT_MESSAGES_WINDOW` into a persistent `context_summary` field in `SamudraState`, merging new turns into any existing summary.
+* **Bounded Recent Window**: Preserves the last 4 raw messages intact alongside `context_summary` for LLM prompt context formatting.
+* **`active_context` Independence**: `context_summary` focuses on conversational background and user preferences. Deterministic structured state (`location`, `latitude`, `longitude`, `time_request`, `topic`, `artifacts`) remains managed by `active_context` as the explicit source of truth.
+
 Conversation state tracks:
 * **Active Location & Coordinates**
 * **Active Activity (e.g. fishing, commercial navigation, diving)**
 * **Active Timeframe**
 * **Last Generated Artifact References & Selections**
+* **Rolling Context Summary (`context_summary`)**
 
 ---
 

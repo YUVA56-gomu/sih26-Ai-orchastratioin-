@@ -23,33 +23,41 @@ def extract_text(response) -> str:
 
 
 def format_recent_history(state: dict, max_messages: int = 6) -> str:
-    """Format recent turns from messages or conversation_history for LLM prompts."""
+    """Format recent turns from messages or conversation_history alongside context_summary for LLM prompts."""
+    summary = state.get("context_summary")
     msgs = state.get("messages") or state.get("conversation_history") or []
-    if not msgs:
-        return ""
 
-    recent = msgs[-max_messages:]
-    formatted = []
-    for m in recent:
-        if isinstance(m, dict):
-            role = m.get("role", "user").capitalize()
-            content = m.get("content") or m.get("text") or ""
-        else:
-            role_raw = getattr(m, "type", "user").lower()
-            if role_raw in ("human", "user"):
-                role = "User"
-            elif role_raw in ("ai", "assistant"):
-                role = "Assistant"
+    sections = []
+    if summary and isinstance(summary, str) and summary.strip():
+        sections.append(f"Long-term Conversation Summary:\n{summary.strip()}")
+
+    if msgs:
+        recent = msgs[-max_messages:]
+        formatted = []
+        for m in recent:
+            if isinstance(m, dict):
+                role = m.get("role", "user").capitalize()
+                content = m.get("content") or m.get("text") or ""
             else:
-                role = role_raw.capitalize()
-            content = getattr(m, "content", str(m))
-        if content:
-            formatted.append(f"{role}: {content}")
+                role_raw = getattr(m, "type", "user").lower()
+                if role_raw in ("human", "user"):
+                    role = "User"
+                elif role_raw in ("ai", "assistant"):
+                    role = "Assistant"
+                else:
+                    role = role_raw.capitalize()
+                content = getattr(m, "content", str(m))
+            if content:
+                formatted.append(f"{role}: {content}")
 
-    if not formatted:
+        if formatted:
+            sections.append("Recent Conversation History:\n" + "\n".join(formatted))
+
+    if not sections:
         return ""
 
-    return "Recent Conversation History:\n" + "\n".join(formatted)
+    return "\n\n".join(sections)
+
 
 
 

@@ -80,4 +80,5 @@ class ConversationSummary(BaseModel):
 class ConversationDetail(ConversationSummary):
     messages: list[dict[str, Any]] = Field(default_factory=list, description="Message history turns")
     active_context: Optional[dict[str, Any]] = Field(default=None, description="Active context state")
+    context_summary: Optional[str] = Field(default=None, description="Rolling conversation summary")
     artifacts: list[dict[str, Any]] = Field(default_factory=list, description="Associated UI artifacts")

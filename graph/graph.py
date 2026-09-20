@@ -36,6 +36,8 @@ Full pipeline:
        │
   synthesizer
        │
+  summarizer (conditional rolling context management)
+       │
   translate_out
        │
   END
@@ -64,6 +66,7 @@ from graph.nodes.reason_fishery import fishery_reasoning_node
 from graph.nodes.reason_safety import safety_reasoning_node
 from graph.nodes.risk import risk_assessment_node
 from graph.nodes.synthesizer import synthesizer_node
+from graph.nodes.summarizer import summarizer_node
 from graph.nodes.translate_out import translate_out_node
 
 
@@ -129,7 +132,7 @@ def route_after_gate(state: SamudraState) -> str:
     After the anti-hallucination gate:
     - RECHECK  → go back to parallel data collection for re-fetch
     - PASS     → proceed to risk + reasoning
-    - BLOCKED  → skip reasoning, go straight to synthesizer
+    - BLOCKED  → skip reasoning, go straight to synthesis
     """
     decision = state.get("gate_decision", "PASS")
     if decision == "RECHECK":
@@ -172,8 +175,9 @@ def build_graph() -> StateGraph:
     g.add_node("fishery_reasoner",         fishery_reasoning_node)
     g.add_node("safety_reasoner",          safety_reasoning_node)
 
-    # ── Final synthesis & translation ──────────────────────────────────────────
+    # ── Final synthesis, summarization & translation ──────────────────────────
     g.add_node("synthesizer",              synthesizer_node)
+    g.add_node("summarizer",               summarizer_node)
     g.add_node("translate_out",            translate_out_node)
 
     # ── Edges: sequential head & Fast/Deep router ──────────────────────────────
@@ -190,8 +194,8 @@ def build_graph() -> StateGraph:
         }
     )
 
-    # Fast Path -> Translate Out -> END
-    g.add_edge("fast_responder",     "translate_out")
+    # Fast Path -> Summarizer -> Translate Out
+    g.add_edge("fast_responder",     "summarizer")
 
     # Deep Path -> Location Resolver -> ...
     g.add_edge("planner",            "location_resolver")
@@ -239,8 +243,9 @@ def build_graph() -> StateGraph:
     g.add_edge("fishery_reasoner",   "synthesizer")
     g.add_edge("safety_reasoner",    "synthesizer")
 
-    # ── Final: synthesizer → translate → END ──────────────────────────────────
-    g.add_edge("synthesizer",        "translate_out")
+    # ── Final: synthesizer → summarizer → translate → END ──────────────────────
+    g.add_edge("synthesizer",        "summarizer")
+    g.add_edge("summarizer",         "translate_out")
     g.add_edge("translate_out",      END)
 
     return g

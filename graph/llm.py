@@ -39,6 +39,14 @@ class FallbackMockLLM:
     def _generate_response(self, messages: list[BaseMessage]) -> str:
         prompt_text = " ".join([m.content for m in messages if hasattr(m, 'content') and m.content])
 
+        # Priority 0: Summarizer
+        if "SUMMARIZER" in prompt_text or "summarize" in prompt_text.lower():
+            return (
+                "Summary of previous turns:\n"
+                "- User inquired about marine conditions and navigation safety.\n"
+                "- Active location discussed in earlier context."
+            )
+
         # Priority 1: Synthesizer
         if "SYNTHESIZER" in prompt_text or "synthesis" in prompt_text.lower() or "synthesise" in prompt_text.lower():
             return (

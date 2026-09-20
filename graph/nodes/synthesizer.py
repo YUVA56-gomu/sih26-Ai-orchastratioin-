@@ -36,10 +36,19 @@ def _build_synthesis_context(state: SamudraState) -> str:
     geofence  = state.get("geofence_data", {})
     errors    = state.get("errors", [])
 
+    from graph.nodes.utils import format_recent_history
+
+    hist_text = format_recent_history(state)
+
     parts = [
         f"USER QUERY: {query}",
         f"INTENT: {plan.get('intent', 'general')}",
         f"LOCATION: {json.dumps(loc)}",
+    ]
+    if hist_text:
+        parts.append(hist_text)
+
+    parts.extend([
         f"\nRISK ASSESSMENT: {risk.get('risk_level','UNKNOWN')} "
         f"(score {risk.get('risk_score','-')}/100)\n"
         f"Reasons: {risk.get('reasons',[])}",
@@ -49,12 +58,13 @@ def _build_synthesis_context(state: SamudraState) -> str:
         f"\n--- WEATHER SPECIALIST ---\n{weather_r}",
         f"\n--- FISHERY SPECIALIST ---\n{fishery_r}",
         f"\n--- SAFETY SPECIALIST ---\n{safety_r}",
-    ]
+    ])
 
     if errors:
         parts.append(f"\nDATA ERRORS: {errors}")
 
     return "\n".join(parts)
+
 
 
 def synthesizer_node(state: SamudraState) -> SamudraState:
