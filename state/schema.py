@@ -36,16 +36,31 @@ class RiskLevel(str, Enum):
     UNKNOWN   = "UNKNOWN"
 
 
+class ActiveContext(TypedDict, total=False):
+    location: Optional[dict[str, Any]]        # Last resolved location {name, latitude, longitude, status}
+    time_request: Optional[str]               # Last requested timeframe ("now", "tomorrow morning", etc.)
+    forecast_days: Optional[int]              # Last requested forecast days
+    topic: Optional[str]                      # Active domain topic ("pfz", "weather", "ocean", "safety")
+    selected_entity: Optional[dict[str, Any]] # Entity referenced in previous turn (e.g. PFZ candidates)
+
+
 # ── Main state ────────────────────────────────────────────────────────────────
 
 class SamudraState(TypedDict, total=False):
 
-    # ── 1. Raw user input ─────────────────────────────────────────────────────
-    user_query: str                  # original text from user
+    # ── 1. Raw user input & Conversation Identity ─────────────────────────────
+    conversation_id: str             # Public conversation identifier
+    thread_id: str                   # Internal LangGraph thread identifier
+    user_query: str                  # Original text from user for current turn
+    messages: Annotated[
+        list[dict[str, Any]],
+        operator.add                 # Append structured message turns: [{role, content, timestamp}]
+    ]
     conversation_history: Annotated[
         list[dict],
-        operator.add                 # append across turns
+        operator.add                 # Append across turns (backward compatibility)
     ]
+    active_context: ActiveContext     # Persistent active context across conversation turns
 
     # ── 2. Language layer ─────────────────────────────────────────────────────
     detected_language: str           # ISO 639-1 code e.g. "ta", "en", "hi"

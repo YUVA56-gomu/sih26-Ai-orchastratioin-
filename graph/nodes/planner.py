@@ -46,8 +46,19 @@ def planner_node(state: SamudraState) -> SamudraState:
             "node_trace": ["planner"],
         }
 
-    # Inject intent into context so planner doesn't re-classify
-    context = f"Intent already classified as: {intent}\n\nUser query: {query}"
+    from graph.nodes.utils import format_recent_history, format_active_context
+
+    hist_text = format_recent_history(state)
+    ctx_text = format_active_context(state)
+
+    context_blocks = [f"Intent already classified as: {intent}"]
+    if hist_text:
+        context_blocks.append(hist_text)
+    if ctx_text:
+        context_blocks.append(ctx_text)
+    context_blocks.append(f"Current User query: {query}")
+
+    context = "\n\n".join(context_blocks)
 
     try:
         llm = get_llm(temperature=0.0)

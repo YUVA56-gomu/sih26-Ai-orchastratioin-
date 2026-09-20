@@ -260,14 +260,26 @@ def build_node_thought(node_name: str, node_output: dict) -> tuple[str, str, str
 
 # ── CONVERSATIONAL CHAT ENDPOINTS ─────────────────────────────────────────────
 
+# ── CONVERSATIONAL CHAT ENDPOINTS ─────────────────────────────────────────────
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    """Main conversational endpoint."""
+    """Main conversational endpoint with multi-turn context support."""
+    user_text = (request.message or request.query or "").strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Query message cannot be empty.")
+
+    conv_id = request.conversation_id or request.thread_id
+    if not conv_id or conv_id == "default":
+        conv_id = str(uuid.uuid4())
+    t_id = conv_id
+
     graph = get_compiled_graph()
 
     initial_state = {
-        "user_query": request.query.strip(),
-        "conversation_history": [],
+        "conversation_id": conv_id,
+        "thread_id": t_id,
+        "user_query": user_text,
         "errors": [],
         "node_trace": [],
         "recheck_count": 0,
@@ -288,7 +300,7 @@ async def chat(request: ChatRequest):
             "needs_navigation": False,
         }
 
-    config = {"configurable": {"thread_id": request.thread_id}}
+    config = {"configurable": {"thread_id": t_id}}
 
     try:
         result = await graph.ainvoke(initial_state, config=config)
@@ -300,6 +312,8 @@ async def chat(request: ChatRequest):
     risk_score = int(risk.get("risk_score", -1))
 
     return ChatResponse(
+        conversation_id=conv_id,
+        thread_id=t_id,
         response=result.get("final_response") or result.get("final_response_english", ""),
         detected_language=result.get("detected_language", "en"),
         intent=str(result.get("intent", "general")),
@@ -310,26 +324,38 @@ async def chat(request: ChatRequest):
         node_trace=result.get("node_trace", []),
         errors=result.get("errors", []),
         location=result.get("location"),
-        thread_id=request.thread_id,
+        active_context=result.get("active_context"),
     )
 
 
 @app.get("/chat/stream")
 async def chat_stream(
-    query: str = Query(...),
-    thread_id: str = Query(default_factory=lambda: str(uuid.uuid4())),
+    query: Optional[str] = Query(None),
+    message: Optional[str] = Query(None),
+    conversation_id: Optional[str] = Query(None),
+    thread_id: Optional[str] = Query(None),
     latitude: Optional[float] = Query(None),
     longitude: Optional[float] = Query(None),
 ):
     """
-    Server-Sent Events (SSE) streaming endpoint.
+    Server-Sent Events (SSE) streaming endpoint with multi-turn conversation support.
     Yields live updates as each AI agent node in the LangGraph graph executes.
     """
+    user_text = (message or query or "").strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Query message cannot be empty.")
+
+    conv_id = conversation_id or thread_id
+    if not conv_id or conv_id == "default":
+        conv_id = str(uuid.uuid4())
+    t_id = conv_id
+
     graph = get_compiled_graph()
 
     initial_state = {
-        "user_query": query.strip(),
-        "conversation_history": [],
+        "conversation_id": conv_id,
+        "thread_id": t_id,
+        "user_query": user_text,
         "errors": [],
         "node_trace": [],
         "recheck_count": 0,
@@ -350,7 +376,7 @@ async def chat_stream(
             "needs_navigation": False,
         }
 
-    config = {"configurable": {"thread_id": thread_id}}
+    config = {"configurable": {"thread_id": t_id}}
 
     async def event_generator() -> AsyncGenerator[str, None]:
         final_state = {}
@@ -375,6 +401,8 @@ async def chat_stream(
             risk = final_state.get("risk_assessment", {})
             response_text = final_state.get("final_response") or final_state.get("final_response_english", "Analysis complete.")
             done_payload = {
+                "conversation_id": conv_id,
+                "thread_id": t_id,
                 "response": response_text,
                 "detected_language": final_state.get("detected_language", "en"),
                 "intent": str(final_state.get("intent", "general")),
@@ -384,7 +412,7 @@ async def chat_stream(
                 "gate_decision": final_state.get("gate_decision", "PASS"),
                 "node_trace": final_state.get("node_trace", []),
                 "location": final_state.get("location"),
-                "thread_id": thread_id,
+                "active_context": final_state.get("active_context"),
             }
             yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
 

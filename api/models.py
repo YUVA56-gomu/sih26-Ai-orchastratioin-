@@ -10,10 +10,21 @@ from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
-    query: str = Field(..., description="User's natural language query")
-    thread_id: str = Field(
-        default="default",
-        description="Conversation thread ID for multi-turn memory",
+    message: Optional[str] = Field(
+        default=None,
+        description="User's natural language query (primary input field)",
+    )
+    query: Optional[str] = Field(
+        default=None,
+        description="Legacy field for user query (backward compatibility)",
+    )
+    conversation_id: Optional[str] = Field(
+        default=None,
+        description="Public conversation identifier for multi-turn context",
+    )
+    thread_id: Optional[str] = Field(
+        default=None,
+        description="Internal thread identifier for LangGraph memory",
     )
     latitude: Optional[float] = Field(
         default=None,
@@ -26,6 +37,8 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    conversation_id: str = Field(..., description="Public conversation identifier")
+    thread_id: str = Field(..., description="Internal LangGraph thread identifier")
     response: str = Field(..., description="Final synthesized response")
     detected_language: str = Field(default="en")
     intent: str = Field(default="general")
@@ -36,7 +49,7 @@ class ChatResponse(BaseModel):
     node_trace: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
     location: Optional[dict[str, Any]] = None
-    thread_id: str = Field(default="default")
+    active_context: Optional[dict[str, Any]] = None
 
 
 class HealthResponse(BaseModel):

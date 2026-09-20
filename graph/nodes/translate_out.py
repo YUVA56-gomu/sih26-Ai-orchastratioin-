@@ -35,19 +35,27 @@ def translate_out_node(state: SamudraState) -> SamudraState:
     response_english = state.get("final_response_english", "")
     lang = state.get("detected_language", "en")
 
+    def _make_response_payload(final_resp: str, err: str | None = None) -> SamudraState:
+        user_query = state.get("user_query", "")
+        user_msg = {"role": "user", "content": user_query}
+        assistant_msg = {"role": "assistant", "content": final_resp}
+
+        res: SamudraState = {
+            "final_response": final_resp,
+            "messages": [user_msg, assistant_msg],
+            "conversation_history": [user_msg, assistant_msg],
+            "node_trace": ["translate_out"],
+        }
+        if err:
+            res["errors"] = [err]
+        return res
+
     # No translation needed for English
     if lang == "en" or not lang:
-        return {
-            "final_response": response_english,
-            "node_trace": ["translate_out"],
-        }
+        return _make_response_payload(response_english)
 
     if not response_english:
-        return {
-            "final_response": "",
-            "errors": ["translate_out_node: empty response to translate"],
-            "node_trace": ["translate_out"],
-        }
+        return _make_response_payload("", "translate_out_node: empty response to translate")
 
     # Map ISO code to language name for the prompt
     _LANG_NAMES = {
@@ -73,14 +81,7 @@ def translate_out_node(state: SamudraState) -> SamudraState:
             HumanMessage(content=response_english),
         ]
         response = llm.invoke(messages)
-        return {
-            "final_response": extract_text(response),
-            "node_trace": ["translate_out"],
-        }
+        return _make_response_payload(extract_text(response))
     except Exception as exc:
         # Fallback: return English if translation fails
-        return {
-            "final_response": response_english,
-            "errors": [f"translate_out_node: {exc}"],
-            "node_trace": ["translate_out"],
-        }
+        return _make_response_payload(response_english, f"translate_out_node: {exc}")

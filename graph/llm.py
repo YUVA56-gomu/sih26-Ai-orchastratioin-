@@ -16,7 +16,14 @@ import os
 import json
 import re
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, BaseMessage
+try:
+    from langchain_core.messages import AIMessage, BaseMessage
+except (ImportError, Exception):
+    class BaseMessage:
+        content: str = ""
+    class AIMessage(BaseMessage):
+        def __init__(self, content: str = ""):
+            self.content = content
 
 load_dotenv()
 
@@ -49,7 +56,9 @@ class FallbackMockLLM:
 
         # Priority 2: Planner
         if "PLANNER" in prompt_text or "execution plan" in prompt_text.lower():
-            loc_match = re.search(r'(?:near|at|off|in|for)\s+([A-Za-z\s]+)', prompt_text, re.IGNORECASE)
+            query_match = re.search(r'Current User query:\s*(.*)', prompt_text, re.IGNORECASE)
+            user_q = query_match.group(1).strip() if query_match else prompt_text
+            loc_match = re.search(r'\b(?:near|at|off|in|for|about|to|around)\b\s+([A-Za-z]+)', user_q, re.IGNORECASE)
             loc_text = loc_match.group(1).strip() if loc_match else ""
             return json.dumps({
                 "intent": "safety" if "safe" in prompt_text.lower() else "general",
@@ -123,8 +132,16 @@ class FallbackMockLLM:
             return json.dumps({"intent": intent_val}, indent=2)
 
         if "LANGUAGE" in prompt_text or "translation assistant" in prompt_text.lower() or "detect the language" in prompt_text.lower():
-            query_match = re.search(r'Human:\s*(.*)', prompt_text, re.DOTALL)
-            user_text = query_match.group(1).strip() if query_match else "Is it safe off Visakhapatnam today?"
+            user_text = ""
+            for m in reversed(messages):
+                if hasattr(m, 'content') and m.content:
+                    content_str = str(m.content).strip()
+                    if not content_str.startswith("You are a language detection") and "detect the language" not in content_str.lower()[:30]:
+                        user_text = content_str
+                        break
+            if not user_text:
+                query_match = re.search(r'Human:\s*(.*)', prompt_text, re.DOTALL)
+                user_text = query_match.group(1).strip() if query_match else "Is it safe off Visakhapatnam today?"
             return json.dumps({
                 "detected_language": "en",
                 "language_name": "English",
@@ -146,8 +163,12 @@ class FallbackMockLLM:
 
 def get_llm(temperature: float = 0.1):
     """Return a LangChain chat model based on LLM_PROVIDER with automatic fallback."""
+    provider = os.getenv("LLM_PROVIDER", "gemini").lower()
 
-    if _PROVIDER == "groq":
+    if provider == "mock":
+        return FallbackMockLLM(temperature=temperature)
+
+    if provider == "groq":
         api_key = os.getenv("GROQ_API_KEY")
         if api_key and api_key != "your_groq_api_key_here":
             try:
@@ -161,7 +182,7 @@ def get_llm(temperature: float = 0.1):
                 pass
         return FallbackMockLLM(temperature=temperature)
 
-    if _PROVIDER == "ollama":
+    if provider == "ollama":
         try:
             from langchain_ollama import ChatOllama
             return ChatOllama(

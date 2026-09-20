@@ -29,11 +29,25 @@ def intent_router_node(state: SamudraState) -> SamudraState:
             "node_trace": ["intent_router"],
         }
 
+    from graph.nodes.utils import extract_text, format_recent_history, format_active_context
+
+    hist_text = format_recent_history(state)
+    ctx_text = format_active_context(state)
+
+    full_query = query
+    context_parts = []
+    if hist_text:
+        context_parts.append(hist_text)
+    if ctx_text:
+        context_parts.append(ctx_text)
+    context_parts.append(f"Current User Query: {query}")
+    prompt_input = "\n\n".join(context_parts)
+
     try:
         llm = get_llm(temperature=0.0)
         messages = [
             SystemMessage(content=INTENT_ROUTER),
-            HumanMessage(content=query),
+            HumanMessage(content=prompt_input),
         ]
         response = llm.invoke(messages)
         raw = extract_text(response)

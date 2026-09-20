@@ -25,14 +25,14 @@ This document describes the exact implementation status of the SAMUDRA AI reposi
 | **Translation** | `IMPLEMENTED` | LLM node in [graph/nodes/translate_out.py](file:///d:/Oscorp/sih/graph/nodes/translate_out.py) outputting final response in detected user language. |
 | **FastAPI Layer** | `IMPLEMENTED` | [api/samudra_api.py](file:///d:/Oscorp/sih/api/samudra_api.py) exposing `/chat`, `/chat/stream`, `/health`, `/graph/schema`, and `/marine/*` endpoints. |
 | **Database / Persistence** | `MISSING` | No database (PostgreSQL, SQLite, Redis) exists for persistent users, sessions, or messages. |
-| **Conversation Memory** | `PARTIAL` | LangGraph `MemorySaver` in-memory checkpointer provides multi-turn thread memory within single-process lifetime. Lost on server restart. |
+| **Conversation Memory** | `IMPLEMENTED` (In-Memory) | Multi-turn conversation context resolution, reference resolution ("there", "which one", "tomorrow"), active location context tracking, and isolated thread memory via LangGraph `MemorySaver`. |
 | **Web Interface** | `PROTOTYPE` | [web/index.html](file:///d:/Oscorp/sih/web/index.html) single-page HTML/JS dashboard with Leaflet map, agent thinking stream viewer, and query box. |
 | **Flutter Application** | `MISSING` | No Flutter codebase exists in repository. |
 | **Voice Interface** | `MISSING` | No Speech-to-Text (STT) or Text-to-Speech (TTS) components exist. |
 | **Authentication** | `MISSING` | No user registration, login, anonymous session tokens, or account migration exist. |
 | **Artifact Protocol** | `PARTIAL` | API returns unstructured attributes (`location`, `risk_level`, `node_trace`), but standard `Artifact` object schema is missing. |
 | **Streaming** | `IMPLEMENTED` | Server-Sent Events (SSE) streaming live agent thoughts available via `GET /chat/stream`. |
-| **Tests** | `PARTIAL` | [tests/test_marine_integration.py](file:///d:/Oscorp/sih/tests/test_marine_integration.py) (16 test cases: 8 pass, 8 fail due to Pydantic/Python 3.14 import collection error). |
+| **Tests** | `IMPLEMENTED` | [tests/test_marine_integration.py](file:///d:/Oscorp/sih/tests/test_marine_integration.py) (16 tests) & [tests/test_conversation_core.py](file:///d:/Oscorp/sih/tests/test_conversation_core.py) (6 tests) — 22 total automated test cases passing. |
 
 ---
 
