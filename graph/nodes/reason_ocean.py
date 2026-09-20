@@ -41,7 +41,7 @@ def ocean_reasoning_node(state: SamudraState) -> SamudraState:
     if not ocean_blocked:
         context_parts.append(
             f"COPERNICUS MARINE DATA (source=satellite/model observation):\n"
-            f"{json.dumps(ocean, indent=2)[:900]}"
+            f"{json.dumps(ocean, indent=2)[:2500]}"
         )
     else:
         context_parts.append("COPERNICUS MARINE DATA: unavailable.")

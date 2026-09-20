@@ -135,6 +135,7 @@ def fast_responder_node(state: SamudraState) -> SamudraState:
         create_location_card_artifact,
         create_weather_card_artifact,
         create_marine_conditions_artifact,
+        create_ocean_conditions_artifact,
     )
 
     artifacts_list = []
@@ -154,6 +155,10 @@ def fast_responder_node(state: SamudraState) -> SamudraState:
             marine_card = create_marine_conditions_artifact(resolved_loc, data)
             if marine_card:
                 artifacts_list.append(marine_card)
+        elif "Copernicus" in source or "Ocean" in source:
+            ocean_card = create_ocean_conditions_artifact(resolved_loc, data)
+            if ocean_card:
+                artifacts_list.append(ocean_card)
 
     if artifacts_list:
         active_ctx["active_artifacts"] = artifacts_list

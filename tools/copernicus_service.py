@@ -40,6 +40,10 @@ import numpy as np
 # DATASETS
 # ============================================================
 
+SALINITY_DATASET = (
+    "cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m"
+)
+
 TEMPERATURE_DATASET = (
     "cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m"
 )
@@ -64,6 +68,7 @@ SURFACE_DEPTH = 0.49402499198913574
 # REQUEST WINDOWS
 # ============================================================
 
+SALINITY_LOOKBACK_HOURS = 72
 TEMPERATURE_LOOKBACK_HOURS = 72
 CURRENT_LOOKBACK_HOURS = 72
 WAVE_LOOKBACK_HOURS = 48
@@ -186,6 +191,7 @@ def latest_value(
     variable: str,
     latitude: float,
     longitude: float,
+    depth: float | None = None,
 ) -> dict[str, Any]:
 
     if variable not in dataset:
@@ -220,15 +226,38 @@ def latest_value(
 
 
     # --------------------------------------------------------
-    # Surface depth
+    # Depth selection (surface vs requested depth level)
     # --------------------------------------------------------
 
-    if "depth" in data.dims:
+    actual_depth = None
+
+    if depth is not None:
+
+        if "depth" in data.dims or "depth" in data.coords:
+
+            data = data.sel(
+                depth=depth,
+                method="nearest",
+            )
+
+            if "depth" in data.coords:
+
+                actual_depth = json_value(
+                    data.coords["depth"].values
+                )
+
+    elif "depth" in data.dims or "depth" in data.coords:
 
         data = data.sel(
             depth=SURFACE_DEPTH,
             method="nearest",
         )
+
+        if "depth" in data.coords:
+
+            actual_depth = json_value(
+                data.coords["depth"].values
+            )
 
 
     # --------------------------------------------------------
@@ -259,10 +288,16 @@ def latest_value(
     )
 
 
-    return {
+    res = {
         "value": value,
         "observation_time": observation_time,
     }
+
+    if actual_depth is not None:
+
+        res["depth"] = actual_depth
+
+    return res
 
 
 # ============================================================
@@ -560,6 +595,255 @@ def get_waves(
 
 
 # ============================================================
+# SALINITY
+# ============================================================
+
+def get_salinity(
+    latitude: float,
+    longitude: float,
+) -> dict[str, Any]:
+
+    dataset = open_small_dataset(
+
+        dataset_id=SALINITY_DATASET,
+
+        variables=[
+            "so"
+        ],
+
+        latitude=latitude,
+        longitude=longitude,
+
+        hours_back=(
+            SALINITY_LOOKBACK_HOURS
+        ),
+
+        surface_data=True,
+    )
+
+
+    result = latest_value(
+
+        dataset,
+
+        "so",
+
+        latitude,
+        longitude,
+    )
+
+
+    return {
+
+        "parameter":
+            "sea_water_salinity",
+
+        "value":
+            result["value"],
+
+        "unit":
+            "psu",
+
+        "variable":
+            "so",
+
+        "latitude":
+            latitude,
+
+        "longitude":
+            longitude,
+
+        "status":
+            "OBSERVED",
+
+        "observation_time":
+            result["observation_time"],
+
+        "dataset_id":
+            SALINITY_DATASET,
+    }
+
+
+# ============================================================
+# CURRENT VELOCITY PROFILES
+# ============================================================
+
+def get_current_profile(
+    latitude: float,
+    longitude: float,
+    target_depths: list[float] | None = None,
+) -> dict[str, Any]:
+
+    if target_depths is None:
+
+        target_depths = [
+            0.49,
+            9.57,
+            21.6,
+            51.9,
+        ]
+
+
+    dataset = open_small_dataset(
+
+        dataset_id=CURRENT_DATASET,
+
+        variables=[
+            "uo",
+            "vo",
+        ],
+
+        latitude=latitude,
+        longitude=longitude,
+
+        hours_back=(
+            CURRENT_LOOKBACK_HOURS
+        ),
+
+        surface_data=False,
+    )
+
+
+    profile_levels = []
+
+    obs_time = None
+
+
+    for target_d in target_depths:
+
+        try:
+
+            u_res = latest_value(
+                dataset,
+                "uo",
+                latitude,
+                longitude,
+                depth=target_d,
+            )
+
+            v_res = latest_value(
+                dataset,
+                "vo",
+                latitude,
+                longitude,
+                depth=target_d,
+            )
+
+
+            u = u_res["value"]
+            v = v_res["value"]
+
+            actual_d = u_res.get(
+                "depth",
+                target_d,
+            )
+
+
+            if obs_time is None:
+
+                obs_time = u_res.get(
+                    "observation_time"
+                )
+
+
+            speed = None
+
+            direction = None
+
+
+            if u is not None and v is not None:
+
+                u = float(u)
+                v = float(v)
+
+                speed = float(
+                    np.sqrt(
+                        (u * u) +
+                        (v * v)
+                    )
+                )
+
+                direction = float(
+                    (
+                        np.degrees(
+                            np.arctan2(
+                                u,
+                                v,
+                            )
+                        )
+                        + 360.0
+                    )
+                    % 360.0
+                )
+
+
+            profile_levels.append({
+
+                "requested_depth_m":
+                    target_d,
+
+                "depth_m":
+                    actual_d,
+
+                "u_ms":
+                    u,
+
+                "v_ms":
+                    v,
+
+                "speed_ms":
+                    speed,
+
+                "direction_deg":
+                    direction,
+            })
+
+
+        except Exception:
+
+            continue
+
+
+    return {
+
+        "parameter":
+            "ocean_current_profile",
+
+        "profile":
+            profile_levels,
+
+        "speed_unit":
+            "m/s",
+
+        "direction_unit":
+            "degree",
+
+        "depth_unit":
+            "m",
+
+        "variables": [
+            "uo",
+            "vo",
+        ],
+
+        "latitude":
+            latitude,
+
+        "longitude":
+            longitude,
+
+        "status":
+            "OBSERVED",
+
+        "observation_time":
+            obs_time,
+
+        "dataset_id":
+            CURRENT_DATASET,
+    }
+
+
+# ============================================================
 # CACHE
 # ============================================================
 
@@ -708,8 +992,14 @@ def get_copernicus_marine_snapshot(
         "temperature":
             get_temperature,
 
+        "salinity":
+            get_salinity,
+
         "currents":
             get_currents,
+
+        "current_profile":
+            get_current_profile,
 
         "waves":
             get_waves,
@@ -717,7 +1007,7 @@ def get_copernicus_marine_snapshot(
 
 
     with ThreadPoolExecutor(
-        max_workers=3
+        max_workers=5
     ) as executor:
 
         futures = {
@@ -782,6 +1072,25 @@ def get_copernicus_marine_snapshot(
         })
 
 
+    if "salinity" in result[
+        "observations"
+    ]:
+
+        result[
+            "provenance"
+        ].append({
+
+            "parameter":
+                "sea_water_salinity",
+
+            "dataset_id":
+                SALINITY_DATASET,
+
+            "variables":
+                ["so"],
+        })
+
+
     if "currents" in result[
         "observations"
     ]:
@@ -798,6 +1107,33 @@ def get_copernicus_marine_snapshot(
 
             "variables":
                 ["uo", "vo"],
+        })
+
+
+    if "current_profile" in result[
+        "observations"
+    ]:
+
+        profile_obs = result["observations"]["current_profile"]
+
+        result[
+            "provenance"
+        ].append({
+
+            "parameter":
+                "ocean_current_profile",
+
+            "dataset_id":
+                CURRENT_DATASET,
+
+            "variables":
+                ["uo", "vo"],
+
+            "depth_levels_m": [
+                p.get("depth_m")
+                for p in profile_obs.get("profile", [])
+                if isinstance(p, dict)
+            ],
         })
 
 
@@ -837,7 +1173,7 @@ def get_copernicus_marine_snapshot(
     )
 
 
-    if available == 3:
+    if available == 5:
 
         result[
             "status"

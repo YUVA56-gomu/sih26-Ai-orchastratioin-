@@ -64,6 +64,38 @@ def calculate_marine_risk(
         )
     )
 
+    wave_period = _number(
+        waves.get(
+            "mean_wave_period_s"
+        )
+    )
+
+    wave_direction = _number(
+        waves.get(
+            "wave_direction_deg"
+        )
+    )
+
+    current_speed = _number(
+        current.get(
+            "speed_ms"
+        )
+    )
+
+    salinity = _number(
+        observations.get(
+            "salinity",
+            {},
+        ).get("value")
+    )
+
+    sst = _number(
+        observations.get(
+            "temperature",
+            {},
+        ).get("value")
+    )
+
     # ── Fallback: use Open-Meteo Marine wave_height if Copernicus unavailable ─
     if wave_height is None and marine:
         marine_current = marine.get("current", {})
@@ -135,6 +167,34 @@ def calculate_marine_risk(
 
             reasons.append(
                 "Moderate wave conditions."
+            )
+
+    # ---------------------------------------------------------
+    # OCEAN CURRENT VELOCITY
+    # ---------------------------------------------------------
+
+    if current_speed is not None:
+
+        if current_speed >= 1.5:
+
+            score += 20
+
+            reasons.append(
+                "Strong ocean current velocity detected."
+            )
+
+    # ---------------------------------------------------------
+    # STEEP / SHORT-PERIOD WAVES
+    # ---------------------------------------------------------
+
+    if wave_height is not None and wave_period is not None:
+
+        if wave_height >= 1.5 and wave_period <= 5.0:
+
+            score += 15
+
+            reasons.append(
+                "Steep, short-period wave conditions."
             )
 
     # ---------------------------------------------------------
@@ -267,6 +327,21 @@ def calculate_marine_risk(
 
             "wave_height_m":
                 wave_height,
+
+            "wave_period_s":
+                wave_period,
+
+            "wave_direction_deg":
+                wave_direction,
+
+            "ocean_current_speed_ms":
+                current_speed,
+
+            "salinity_psu":
+                salinity,
+
+            "sea_surface_temp_c":
+                sst,
 
             "wind_speed_kmh":
                 wind_speed,

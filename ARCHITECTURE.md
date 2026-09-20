@@ -164,6 +164,16 @@ User Request (GET / POST /chat/stream)
 * **Protocol Decoupling**: Clients consume the stream without knowledge of internal LangGraph objects.
 * **Storage & Context Compatibility**: Integrates seamlessly with persistent `SqliteSaver` checkpoints and `ConversationStore` metadata.
 
+### 3.4 Ocean Hydrodynamics Architecture (Phase 2.2)
+
+SAMUDRA AI implements comprehensive ocean hydrodynamics data collection and risk reasoning:
+
+* **5-Parameter Parallel Collector**: `get_copernicus_marine_snapshot()` queries 5 parameter tasks in parallel (`temperature`, `salinity`, `currents`, `current_profile`, `waves`).
+* **Sea-Water Salinity (`so`)**: Fetched via `get_salinity()` from CMEMS dataset `cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m` (unit `psu`).
+* **Multi-Depth Current Profiles**: `get_current_profile()` resolves velocity vectors (`u_ms`, `v_ms`, `speed_ms`, `direction_deg`) across target depth coordinates (`[0.49m, 9.57m, 21.6m, 51.9m]`) using nearest-depth selection.
+* **Hydrodynamics Risk Scoring**: `calculate_marine_risk()` deterministically evaluates strong ocean current velocity ($\ge 1.5$ m/s) and steep short-period wave hazards ($VHM0 \ge 1.5$ m AND $VTM02 \le 5.0$ s).
+* **`ocean_card` Artifact**: `create_ocean_conditions_artifact()` produces structured UI cards containing location, SST, salinity, surface currents, multi-depth current profile array, wave spectrum, and ISO-8601 provenance entries.
+
 ---
 
 ## 4. ARTIFACT PROTOCOL

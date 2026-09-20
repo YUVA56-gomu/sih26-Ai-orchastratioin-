@@ -39,6 +39,7 @@ def translate_out_node(state: SamudraState) -> SamudraState:
         create_location_card_artifact,
         create_pfz_map_artifact,
         create_weather_card_artifact,
+        create_ocean_conditions_artifact,
         create_risk_summary_artifact,
     )
 
@@ -50,6 +51,7 @@ def translate_out_node(state: SamudraState) -> SamudraState:
         fish = state.get("fishery_data", {})
         risk = state.get("risk_assessment", {})
         wx = state.get("weather_data", {})
+        oc = state.get("ocean_data", {})
 
         if fish and (fish.get("status") in ("OK", "Calculated", "HEURISTIC") or fish.get("candidates") or fish.get("pfz_candidates")):
             pfz_art = create_pfz_map_artifact(loc, fish)
@@ -65,6 +67,11 @@ def translate_out_node(state: SamudraState) -> SamudraState:
             wx_art = create_weather_card_artifact(loc, wx)
             if wx_art and not any(a.get("type") == "weather_card" for a in existing_artifacts):
                 existing_artifacts.append(wx_art)
+
+        if oc and oc.get("observations"):
+            oc_art = create_ocean_conditions_artifact(loc, oc)
+            if oc_art and not any(a.get("type") == "ocean_card" for a in existing_artifacts):
+                existing_artifacts.append(oc_art)
 
         if loc.get("status") == "FOUND" and not existing_artifacts:
             loc_art = create_location_card_artifact(loc)

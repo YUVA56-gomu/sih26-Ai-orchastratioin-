@@ -85,3 +85,10 @@ This document records the foundational architectural decisions governing the SAM
 * **Status**: ACCEPTED
 * **Context**: Atmospheric forecasting requires multi-day daily summaries, hourly timeseries, peak wind gust risk detection, and explicit provenance tracking to prevent hallucination and misattribution.
 * **Decision**: The weather service (`tools/weather_service.py`) expands Open-Meteo coverage to include `current` (10 parameters), `hourly` (14 parameters), `daily` (15 parameters), unit dictionaries, and explicit UTC ISO-8601 provenance metadata (`source`, `provider`, `data_class: "FORECAST"`, `retrieved_at`). `weather_card` artifacts bundle daily forecast arrays, bounded 24-hour hourly windows, unit dictionaries, and provenance metadata.
+
+---
+
+### ADR-013: Phase 2.2 Ocean Hydrodynamics Integration
+* **Status**: ACCEPTED
+* **Context**: Comprehensive ocean hydrodynamics intelligence requires sea-water salinity (`so`), multi-depth current velocity profiles (`uo`, `vo` at 0.49m, 9.57m, 21.6m, 51.9m), structured ocean artifacts (`ocean_card`), deterministic current/wave risk scoring, and anti-hallucinated specialist reasoning.
+* **Decision**: Copernicus Marine integration (`tools/copernicus_service.py`) expands parallel parameter retrieval to 5 tasks (`temperature`, `salinity`, `currents`, `current_profile`, `waves`). `get_salinity()` consumes CMEMS dataset `cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m`. `get_current_profile()` performs robust nearest-depth selection over target coordinates without assuming exact dataset levels. The deterministic risk engine (`tools/marine_risk.py`) adds strong current ($\ge 1.5$ m/s) and steep wave ($VHM0 \ge 1.5$ m AND $VTM02 \le 5.0$ s) rules. The specialist ocean reasoner formats full hydrodynamics evidence up to 2500 characters. Standardized `ocean_card` artifacts bundle location, temperature, salinity, currents, wave spectrum, and provenance metadata.

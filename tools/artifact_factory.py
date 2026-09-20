@@ -142,6 +142,71 @@ def create_marine_conditions_artifact(location: dict[str, Any], marine_data: dic
     )
 
 
+def create_ocean_conditions_artifact(location: dict[str, Any], ocean_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    """Build a dedicated ocean hydrodynamics card artifact (Copernicus Marine)."""
+    if not isinstance(location, dict) or location.get("status") != "FOUND":
+        return None
+    if not isinstance(ocean_data, dict) or ocean_data.get("status") in ("SKIPPED", "BLOCKED", "ERROR", None):
+        return None
+
+    lat = location.get("latitude")
+    lon = location.get("longitude")
+    name = location.get("name", "Selected Region")
+
+    obs = ocean_data.get("observations", {})
+    temp_obs = obs.get("temperature", {})
+    sal_obs = obs.get("salinity", {})
+    curr_obs = obs.get("currents", {})
+    prof_obs = obs.get("current_profile", {})
+    wave_obs = obs.get("waves", {})
+
+    temp_data = {
+        "value": temp_obs.get("value"),
+        "unit": temp_obs.get("unit", "°C"),
+        "observation_time": temp_obs.get("observation_time"),
+    } if temp_obs else {}
+
+    sal_data = {
+        "value": sal_obs.get("value"),
+        "unit": sal_obs.get("unit", "psu"),
+        "observation_time": sal_obs.get("observation_time"),
+    } if sal_obs else {}
+
+    currents_data = {
+        "speed_ms": curr_obs.get("speed_ms"),
+        "direction_deg": curr_obs.get("direction_deg"),
+        "u_ms": curr_obs.get("u_ms"),
+        "v_ms": curr_obs.get("v_ms"),
+        "profile": prof_obs.get("profile", []) if prof_obs else [],
+    } if (curr_obs or prof_obs) else {}
+
+    waves_data = {
+        "significant_wave_height_m": wave_obs.get("significant_wave_height_m"),
+        "mean_wave_period_s": wave_obs.get("mean_wave_period_s"),
+        "wave_direction_deg": wave_obs.get("wave_direction_deg"),
+    } if wave_obs else {}
+
+    provenance = ocean_data.get("provenance", [])
+    retrieved_at = ocean_data.get("retrieved_at", "")
+
+    return create_artifact(
+        artifact_type="ocean_card",
+        artifact_id=f"ocean_card_{lat}_{lon}",
+        title=f"Ocean Hydrodynamics — {name}",
+        description=f"SST: {temp_data.get('value')}°C | Salinity: {sal_data.get('value')} psu | Current: {currents_data.get('speed_ms')} m/s",
+        data={
+            "location": {"name": name, "latitude": lat, "longitude": lon},
+            "temperature": temp_data,
+            "salinity": sal_data,
+            "currents": currents_data,
+            "waves": waves_data,
+            "provenance": provenance,
+            "retrieved_at": retrieved_at,
+        },
+    )
+
+
+
 def create_risk_summary_artifact(location: dict[str, Any], risk_assessment: dict[str, Any]) -> Optional[dict[str, Any]]:
     """Build a safety risk summary artifact."""
     if not isinstance(risk_assessment, dict) or not risk_assessment.get("risk_level"):

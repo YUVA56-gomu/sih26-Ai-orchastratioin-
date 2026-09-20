@@ -33,6 +33,7 @@ class ArtifactType(str, Enum):
     PFZ_MAP            = "pfz_map"
     WEATHER_CARD       = "weather_card"
     MARINE_CONDITIONS  = "marine_conditions"
+    OCEAN_CARD         = "ocean_card"
     RISK_SUMMARY       = "risk_summary"
     ROUTE_MAP          = "route_map"
     CHART              = "chart"
