@@ -17,10 +17,10 @@ This document describes the exact implementation status of the SAMUDRA AI reposi
 | **Planning** | `IMPLEMENTED` | LLM node in [graph/nodes/planner.py](file:///d:/Oscorp/sih/graph/nodes/planner.py) executed conditionally on Deep Path. |
 | **Location Resolution** | `IMPLEMENTED` | Node in [graph/nodes/location.py](file:///d:/Oscorp/sih/graph/nodes/location.py) calling Open-Meteo Geocoding API via [tools/location.py](file:///d:/Oscorp/sih/tools/location.py) with active location context retention and replacement. |
 | **Marine Data** | `IMPLEMENTED` | Copernicus Marine API in [tools/copernicus_service.py](file:///d:/Oscorp/sih/tools/copernicus_service.py) and Open-Meteo Marine API in [tools/marine_service.py](file:///d:/Oscorp/sih/tools/marine_service.py) & [graph/nodes/data_marine.py](file:///d:/Oscorp/sih/graph/nodes/data_marine.py). |
-| **Weather Data** | `IMPLEMENTED` | Open-Meteo Weather API integration in [tools/weather_service.py](file:///d:/Oscorp/sih/tools/weather_service.py) & [graph/nodes/data_weather.py](file:///d:/Oscorp/sih/graph/nodes/data_weather.py). |
+| **Weather Data** | `IMPLEMENTED` (Phase 2.1) | Enhanced Open-Meteo Weather API integration in [tools/weather_service.py](file:///d:/Oscorp/sih/tools/weather_service.py) with current, hourly (14 variables), daily (15 variables) forecast coverage, UTC ISO-8601 provenance metadata, wind-gust risk scoring, and enriched `weather_card` artifacts. |
 | **PFZ (Potential Fishing Zone)** | `HEURISTIC` / `PROTOTYPE` | [tools/pfz_service.py](file:///d:/Oscorp/sih/tools/pfz_service.py) samples SST at spatial offsets (28°C heuristic). Does not yet consume official INCOIS/MOSDAC bulletins. |
 | **Geofencing / Boundaries** | `DEMO` | [tools/geofence.py](file:///d:/Oscorp/sih/tools/geofence.py) evaluates against a single demo circle boundary off Visakhapatnam (`DEMO_ZONES`). Authoritative EEZ/MPA GIS polygons not yet loaded. |
-| **Risk Assessment** | `IMPLEMENTED` | Deterministic marine risk engine in [tools/marine_risk.py](file:///d:/Oscorp/sih/tools/marine_risk.py) computing 0–100 risk score and level (`LOW`, `MODERATE`, `HIGH`, `VERY HIGH`). |
+| **Risk Assessment** | `IMPLEMENTED` | Deterministic marine risk engine in [tools/marine_risk.py](file:///d:/Oscorp/sih/tools/marine_risk.py) computing 0–100 risk score and level (`LOW`, `MODERATE`, `HIGH`, `VERY HIGH`) with wind gust sensitivity. |
 | **Specialist Reasoning** | `IMPLEMENTED` | Parallel LLM nodes in [graph/nodes/reason_*.py](file:///d:/Oscorp/sih/graph/nodes/) for ocean, weather, fishery, and marine safety. |
 | **Synthesis** | `IMPLEMENTED` | LLM node in [graph/nodes/synthesizer.py](file:///d:/Oscorp/sih/graph/nodes/synthesizer.py) synthesizing evidence into a unified English report. |
 | **Translation** | `IMPLEMENTED` | LLM node in [graph/nodes/translate_out.py](file:///d:/Oscorp/sih/graph/nodes/translate_out.py) outputting final response in detected user language. |
@@ -33,7 +33,7 @@ This document describes the exact implementation status of the SAMUDRA AI reposi
 | **Voice Interface** | `MISSING` | No Speech-to-Text (STT) or Text-to-Speech (TTS) components exist. |
 | **Authentication** | `MISSING` | No user registration, login, anonymous session tokens, or account migration exist. |
 | **Streaming** | `IMPLEMENTED` (M1.7) | Standardized Server-Sent Events (SSE) streaming pipeline via `GET /chat/stream` and `POST /chat/stream` emitting normalized events (`start`, `node`, `response`, `artifact`, `done`, `error`). Fully compatible with persistence and context summarization. |
-| **Tests** | `IMPLEMENTED` | Comprehensive automated test suite in [tests/](file:///d:/Oscorp/sih/tests/) (54 passed) covering Marine integrations, Conversation Core, Router, Artifact Protocol, Persistent Storage, Rolling Context Summarization, and Streaming Pipeline. |
+| **Tests** | `IMPLEMENTED` | Comprehensive automated test suite in [tests/](file:///d:/Oscorp/sih/tests/) (59 passed) covering Marine integrations, Conversation Core, Router, Artifact Protocol, Persistent Storage, Rolling Context Summarization, Streaming Pipeline, and Weather Integration. |
 
 ---
 

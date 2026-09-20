@@ -78,3 +78,10 @@ This document records the foundational architectural decisions governing the SAM
 * **Status**: ACCEPTED
 * **Context**: Real-time agent thought streaming and incremental response rendering must be decoupled from internal framework implementations (e.g. LangGraph) so client applications (Web, Flutter) consume a stable contract.
 * **Decision**: SSE streaming (`/chat/stream`) emits a normalized event schema (`start`, `node`, `response`, `artifact`, `done`, `error`) with JSON payloads. Streaming preserves conversation state, checkpoints to SQLite, and maintains context summarization compatibility without duplicating graph logic.
+
+---
+
+### ADR-012: Enhanced Weather Service Coverage & Provenance
+* **Status**: ACCEPTED
+* **Context**: Atmospheric forecasting requires multi-day daily summaries, hourly timeseries, peak wind gust risk detection, and explicit provenance tracking to prevent hallucination and misattribution.
+* **Decision**: The weather service (`tools/weather_service.py`) expands Open-Meteo coverage to include `current` (10 parameters), `hourly` (14 parameters), `daily` (15 parameters), unit dictionaries, and explicit UTC ISO-8601 provenance metadata (`source`, `provider`, `data_class: "FORECAST"`, `retrieved_at`). `weather_card` artifacts bundle daily forecast arrays, bounded 24-hour hourly windows, unit dictionaries, and provenance metadata.

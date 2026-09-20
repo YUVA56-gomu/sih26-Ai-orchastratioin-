@@ -77,6 +77,24 @@ def calculate_marine_risk(
         )
     )
 
+    wind_gusts = _number(
+        weather_current.get(
+            "wind_gusts_10m"
+        )
+    )
+    if wind_gusts is None:
+        hourly_gusts = (weather.get("hourly") or {}).get("wind_gusts_10m", [])
+        if isinstance(hourly_gusts, list) and hourly_gusts:
+            valid_gusts = [float(g) for g in hourly_gusts if _number(g) is not None]
+            if valid_gusts:
+                wind_gusts = max(valid_gusts[:24])
+        if wind_gusts is None:
+            daily_gusts = (weather.get("daily") or {}).get("wind_gusts_10m_max", [])
+            if isinstance(daily_gusts, list) and daily_gusts:
+                valid_daily = [float(g) for g in daily_gusts if _number(g) is not None]
+                if valid_daily:
+                    wind_gusts = valid_daily[0]
+
     weather_code = _number(
         weather_current.get(
             "weather_code"
@@ -120,7 +138,7 @@ def calculate_marine_risk(
             )
 
     # ---------------------------------------------------------
-    # WIND
+    # WIND & GUSTS
     # ---------------------------------------------------------
 
     if wind_speed is not None:
@@ -147,6 +165,32 @@ def calculate_marine_risk(
 
             reasons.append(
                 "Moderate wind conditions."
+            )
+
+    if wind_gusts is not None:
+
+        if wind_gusts >= 55:
+
+            score += 25
+
+            reasons.append(
+                "Severe peak wind gusts detected."
+            )
+
+        elif wind_gusts >= 40:
+
+            score += 15
+
+            reasons.append(
+                "Elevated wind gust potential."
+            )
+
+        elif wind_gusts >= 28:
+
+            score += 8
+
+            reasons.append(
+                "Moderate wind gust activity."
             )
 
     # ---------------------------------------------------------
@@ -226,6 +270,9 @@ def calculate_marine_risk(
 
             "wind_speed_kmh":
                 wind_speed,
+
+            "wind_gusts_kmh":
+                wind_gusts,
 
             "weather_code":
                 weather_code,

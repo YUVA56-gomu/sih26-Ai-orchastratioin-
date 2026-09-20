@@ -29,7 +29,6 @@ def weather_reasoning_node(state: SamudraState) -> SamudraState:
 
     query = state.get("query_in_english") or state.get("user_query", "")
 
-    # Trim hourly data to avoid token overflow — send current + first 24h
     weather_trimmed = {k: v for k, v in weather.items() if k != "hourly"}
     hourly = weather.get("hourly", {})
     weather_trimmed["hourly_24h"] = {
@@ -37,9 +36,12 @@ def weather_reasoning_node(state: SamudraState) -> SamudraState:
         for k, v in hourly.items()
     }
 
+    prov = weather.get("provenance", {})
+
     context = (
         f"USER QUERY: {query}\n\n"
-        f"WEATHER DATA:\n{json.dumps(weather_trimmed, indent=2)[:1500]}"
+        f"DATA PROVENANCE: {json.dumps(prov)}\n\n"
+        f"ATMOSPHERIC OBSERVATIONS & FORECAST DATA:\n{json.dumps(weather_trimmed, indent=2)[:2000]}"
     )
 
     try:

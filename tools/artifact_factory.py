@@ -87,6 +87,25 @@ def create_weather_card_artifact(location: dict[str, Any], weather_data: dict[st
     lon = location.get("longitude")
     name = location.get("name", "Selected Region")
     curr = weather_data.get("current", {}) if isinstance(weather_data, dict) else {}
+    daily = weather_data.get("daily", {}) if isinstance(weather_data, dict) else {}
+    raw_hourly = weather_data.get("hourly", {}) if isinstance(weather_data, dict) else {}
+    hourly_bounded = {
+        k: v[:24] if isinstance(v, list) else v
+        for k, v in raw_hourly.items()
+    } if isinstance(raw_hourly, dict) else {}
+
+    units = {
+        "current": weather_data.get("current_units", {}) if isinstance(weather_data, dict) else {},
+        "hourly": weather_data.get("hourly_units", {}) if isinstance(weather_data, dict) else {},
+        "daily": weather_data.get("daily_units", {}) if isinstance(weather_data, dict) else {},
+    }
+
+    prov = weather_data.get("provenance", {
+        "source": "Open-Meteo Weather API",
+        "provider": "Open-Meteo",
+        "data_class": "FORECAST",
+    }) if isinstance(weather_data, dict) else {}
+
     return create_artifact(
         artifact_type="weather_card",
         artifact_id=f"wx_card_{lat}_{lon}",
@@ -95,7 +114,10 @@ def create_weather_card_artifact(location: dict[str, Any], weather_data: dict[st
         data={
             "location": {"name": name, "latitude": lat, "longitude": lon},
             "current": curr,
-            "daily": weather_data.get("daily", {}) if isinstance(weather_data, dict) else {},
+            "daily": daily,
+            "hourly": hourly_bounded,
+            "units": units,
+            "provenance": prov,
         },
     )
 
