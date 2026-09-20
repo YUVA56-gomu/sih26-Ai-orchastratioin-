@@ -387,30 +387,33 @@ async def get_conversation_detail(conversation_id: str):
 
 
 
-@app.get("/chat/stream")
-async def chat_stream(
-    query: Optional[str] = Query(None),
-    message: Optional[str] = Query(None),
-    conversation_id: Optional[str] = Query(None),
-    thread_id: Optional[str] = Query(None),
-    latitude: Optional[float] = Query(None),
-    longitude: Optional[float] = Query(None),
-):
-    """
-    Server-Sent Events (SSE) streaming endpoint with multi-turn conversation support.
-    Yields live updates as each AI agent node in the LangGraph graph executes.
-    """
-    user_text = (message or query or "").strip()
-    if not user_text:
-        raise HTTPException(status_code=400, detail="Query message cannot be empty.")
-
+async def _execute_chat_stream(
+    user_text: str,
+    conversation_id: Optional[str] = None,
+    thread_id: Optional[str] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+) -> AsyncGenerator[str, None]:
     conv_id = conversation_id or thread_id
     if not conv_id or conv_id == "default":
         conv_id = str(uuid.uuid4())
     t_id = conv_id
 
-    graph = get_compiled_graph()
+    # 1. Persist initial conversation metadata
+    try:
+        conversation_store.get_or_create_conversation(conv_id, first_query=user_text)
+    except Exception:
+        pass
 
+    # 2. Emit start event
+    start_payload = {
+        "conversation_id": conv_id,
+        "thread_id": t_id,
+        "query": user_text,
+    }
+    yield f"event: start\ndata: {json.dumps(start_payload)}\n\n"
+
+    graph = get_compiled_graph()
     initial_state = {
         "conversation_id": conv_id,
         "thread_id": t_id,
@@ -436,52 +439,142 @@ async def chat_stream(
         }
 
     config = {"configurable": {"thread_id": t_id}}
+    final_state = {}
+    seen_artifact_ids = set()
+    emitted_response_snippets = set()
 
-    async def event_generator() -> AsyncGenerator[str, None]:
-        final_state = {}
-        try:
-            # Stream node output updates from LangGraph
-            async for chunk in graph.astream(initial_state, config=config, stream_mode="updates"):
-                for node_name, node_output in chunk.items():
-                    if isinstance(node_output, dict):
-                        final_state.update(node_output)
-                        icon, label, thought, summary = build_node_thought(node_name, node_output)
-                        event_data = {
-                            "node": node_name,
-                            "icon": icon,
-                            "label": label,
-                            "thought": thought,
-                            "summary": summary,
+    try:
+        async for chunk in graph.astream(initial_state, config=config, stream_mode="updates"):
+            for node_name, node_output in chunk.items():
+                if isinstance(node_output, dict):
+                    final_state.update(node_output)
+                    route_path = final_state.get("route_path") or ("FAST" if node_name == "fast_responder" else "DEEP")
+                    icon, label, thought, summary = build_node_thought(node_name, node_output)
+
+                    node_payload = {
+                        "node": node_name,
+                        "status": "completed",
+                        "message": thought,
+                        "thought": thought,
+                        "icon": icon,
+                        "label": label,
+                        "summary": summary,
+                        "path": route_path,
+                    }
+                    yield f"event: node\ndata: {json.dumps(node_payload)}\n\n"
+                    yield f"event: agent_step\ndata: {json.dumps(node_payload)}\n\n"
+
+                    # Emit incremental artifacts if produced
+                    artifacts = node_output.get("artifacts") or []
+                    for art in artifacts:
+                        art_dict = art.model_dump() if hasattr(art, "model_dump") else (art.dict() if hasattr(art, "dict") else art)
+                        if isinstance(art_dict, dict):
+                            art_id = art_dict.get("id") or str(uuid.uuid4())
+                            if art_id not in seen_artifact_ids:
+                                seen_artifact_ids.add(art_id)
+                                yield f"event: artifact\ndata: {json.dumps({'artifact': art_dict})}\n\n"
+
+                    # Emit incremental response text if available
+                    resp_text = node_output.get("final_response") or node_output.get("final_response_english")
+                    if resp_text and isinstance(resp_text, str) and resp_text not in emitted_response_snippets:
+                        emitted_response_snippets.add(resp_text)
+                        response_payload = {
+                            "content": resp_text,
+                            "incremental": True,
                         }
-                        yield f"event: agent_step\ndata: {json.dumps(event_data)}\n\n"
-                        await asyncio.sleep(0.05)
+                        yield f"event: response\ndata: {json.dumps(response_payload)}\n\n"
 
-            # Final response compilation
-            risk = final_state.get("risk_assessment")
-            response_text = final_state.get("final_response") or final_state.get("final_response_english", "Analysis complete.")
-            done_payload = {
-                "conversation_id": conv_id,
-                "thread_id": t_id,
-                "response": response_text,
-                "artifacts": final_state.get("artifacts", []),
-                "route_path": final_state.get("route_path", "DEEP"),
-                "detected_language": final_state.get("detected_language", "en"),
-                "intent": str(final_state.get("intent", "general")),
-                "risk_level": risk.get("risk_level") if isinstance(risk, dict) else None,
-                "risk_score": int(risk.get("risk_score")) if isinstance(risk, dict) and risk.get("risk_score") is not None else None,
-                "confidence_score": float(final_state["confidence_score"]) if "confidence_score" in final_state else None,
-                "gate_decision": final_state.get("gate_decision"),
-                "node_trace": final_state.get("node_trace", []),
-                "location": final_state.get("location"),
-                "active_context": final_state.get("active_context"),
-            }
-            yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
+                    await asyncio.sleep(0)
 
-        except Exception as exc:
-            err_payload = {"error": f"Graph streaming error: {str(exc)}"}
-            yield f"event: error\ndata: {json.dumps(err_payload)}\n\n"
+        # Touch conversation store upon stream completion
+        try:
+            conversation_store.touch_conversation(conv_id)
+        except Exception:
+            pass
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+        # Final response compilation
+        risk = final_state.get("risk_assessment")
+        response_text = final_state.get("final_response") or final_state.get("final_response_english", "Analysis complete.")
+
+        final_artifacts_raw = final_state.get("artifacts", [])
+        final_artifacts = []
+        for art in final_artifacts_raw:
+            art_dict = art.model_dump() if hasattr(art, "model_dump") else (art.dict() if hasattr(art, "dict") else art)
+            if isinstance(art_dict, dict):
+                final_artifacts.append(art_dict)
+
+        done_payload = {
+            "conversation_id": conv_id,
+            "thread_id": t_id,
+            "response": response_text,
+            "artifacts": final_artifacts,
+            "route_path": final_state.get("route_path", "DEEP"),
+            "detected_language": final_state.get("detected_language", "en"),
+            "intent": str(final_state.get("intent", "general")),
+            "risk_level": risk.get("risk_level") if isinstance(risk, dict) else None,
+            "risk_score": int(risk.get("risk_score")) if isinstance(risk, dict) and risk.get("risk_score") is not None else None,
+            "confidence_score": float(final_state["confidence_score"]) if "confidence_score" in final_state else None,
+            "gate_decision": final_state.get("gate_decision"),
+            "node_trace": final_state.get("node_trace", []),
+            "location": final_state.get("location"),
+            "active_context": final_state.get("active_context"),
+        }
+        yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
+
+    except Exception as exc:
+        err_msg = str(exc)
+        safe_msg = f"Graph execution error: {err_msg.splitlines()[0]}" if err_msg else "An internal streaming error occurred."
+        err_payload = {"error": safe_msg}
+        yield f"event: error\ndata: {json.dumps(err_payload)}\n\n"
+
+
+@app.get("/chat/stream")
+async def chat_stream_get(
+    query: Optional[str] = Query(None),
+    message: Optional[str] = Query(None),
+    conversation_id: Optional[str] = Query(None),
+    thread_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+):
+    """
+    Server-Sent Events (SSE) GET streaming endpoint with multi-turn conversation support.
+    """
+    user_text = (message or query or "").strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Query message cannot be empty.")
+
+    return StreamingResponse(
+        _execute_chat_stream(
+            user_text=user_text,
+            conversation_id=conversation_id,
+            thread_id=thread_id,
+            latitude=latitude,
+            longitude=longitude,
+        ),
+        media_type="text/event-stream",
+    )
+
+
+@app.post("/chat/stream")
+async def chat_stream_post(request: ChatRequest):
+    """
+    Server-Sent Events (SSE) POST streaming endpoint accepting ChatRequest body.
+    """
+    user_text = (request.message or request.query or "").strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Query message cannot be empty.")
+
+    return StreamingResponse(
+        _execute_chat_stream(
+            user_text=user_text,
+            conversation_id=request.conversation_id,
+            thread_id=request.thread_id,
+            latitude=request.latitude,
+            longitude=request.longitude,
+        ),
+        media_type="text/event-stream",
+    )
 
 
 @app.get("/graph/schema")

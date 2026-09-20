@@ -134,12 +134,35 @@ SAMUDRA AI implements threshold-triggered rolling context summarization (`graph/
 * **Bounded Recent Window**: Preserves the last 4 raw messages intact alongside `context_summary` for LLM prompt context formatting.
 * **`active_context` Independence**: `context_summary` focuses on conversational background and user preferences. Deterministic structured state (`location`, `latitude`, `longitude`, `time_request`, `topic`, `artifacts`) remains managed by `active_context` as the explicit source of truth.
 
-Conversation state tracks:
-* **Active Location & Coordinates**
-* **Active Activity (e.g. fishing, commercial navigation, diving)**
-* **Active Timeframe**
-* **Last Generated Artifact References & Selections**
-* **Rolling Context Summary (`context_summary`)**
+### 3.3 Real-Time SSE Streaming Pipeline (M1.7)
+
+SAMUDRA AI exposes a real-time Server-Sent Events (SSE) streaming architecture at `GET /chat/stream` and `POST /chat/stream` for live agent execution feedback, incremental response rendering, and immediate artifact delivery:
+
+```text
+User Request (GET / POST /chat/stream)
+  │
+  ├── 1. Persist Initial Conversation Metadata (ConversationStore)
+  ├── 2. Emit event: start (conversation_id, thread_id, query)
+  │
+  ├── 3. Graph Execution via graph.astream(stream_mode="updates")
+  │     ├── Node execution ──► Emit event: node (status, thought, icon, label, path, summary)
+  │     ├── Artifact generated ─► Emit event: artifact (incremental structured artifact payload)
+  │     └── Response snippet ──► Emit event: response (incremental natural-language chunk)
+  │
+  ├── 4. Touch Conversation Metadata & Checkpoint (SqliteSaver)
+  │
+  └── 5. Emit event: done (final response, artifacts, route_path, risk_level, context, node_trace)
+```
+
+* **Standard Event Protocol**:
+  1. `start` — Emitted immediately on connection (`conversation_id`, `thread_id`, `query`).
+  2. `node` — Emitted as each agent node executes (`node`, `status`, `message`, `thought`, `icon`, `label`, `summary`, `path`).
+  3. `response` — Emitted when response text becomes available (`content`, `incremental`: `true`).
+  4. `artifact` — Emitted incrementally as UI artifacts are generated (`artifact` payload).
+  5. `done` — Emitted on turn completion with complete `ChatResponse` payload.
+  6. `error` — Emitted if an unhandled exception occurs (`error` message, avoiding stack trace exposure).
+* **Protocol Decoupling**: Clients consume the stream without knowledge of internal LangGraph objects.
+* **Storage & Context Compatibility**: Integrates seamlessly with persistent `SqliteSaver` checkpoints and `ConversationStore` metadata.
 
 ---
 

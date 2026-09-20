@@ -32,8 +32,8 @@ This document describes the exact implementation status of the SAMUDRA AI reposi
 | **Flutter Application** | `MISSING` | No Flutter codebase exists in repository. |
 | **Voice Interface** | `MISSING` | No Speech-to-Text (STT) or Text-to-Speech (TTS) components exist. |
 | **Authentication** | `MISSING` | No user registration, login, anonymous session tokens, or account migration exist. |
-| **Streaming** | `IMPLEMENTED` | Server-Sent Events (SSE) streaming live agent thoughts available via `GET /chat/stream`. |
-| **Tests** | `IMPLEMENTED` | Comprehensive automated test suite in [tests/](file:///d:/Oscorp/sih/tests/) covering Marine integrations, Conversation Core, Router, Artifact Protocol, and Persistent Storage. |
+| **Streaming** | `IMPLEMENTED` (M1.7) | Standardized Server-Sent Events (SSE) streaming pipeline via `GET /chat/stream` and `POST /chat/stream` emitting normalized events (`start`, `node`, `response`, `artifact`, `done`, `error`). Fully compatible with persistence and context summarization. |
+| **Tests** | `IMPLEMENTED` | Comprehensive automated test suite in [tests/](file:///d:/Oscorp/sih/tests/) (54 passed) covering Marine integrations, Conversation Core, Router, Artifact Protocol, Persistent Storage, Rolling Context Summarization, and Streaming Pipeline. |
 
 ---
 

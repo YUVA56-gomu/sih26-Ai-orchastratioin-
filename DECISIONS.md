@@ -71,3 +71,10 @@ This document records the foundational architectural decisions governing the SAM
 * **Status**: ACCEPTED
 * **Context**: AI coding agents operating on the repository must follow strict architectural constraints.
 * **Decision**: AI coding agents must strictly obey the repository constitution (`AGENTS.md`, `ARCHITECTURE.md`, `CURRENT_STATE.md`, `DECISIONS.md`). Agents are forbidden from independently redesigning system architecture without explicit user instructions.
+
+---
+
+### ADR-011: Normalized SSE Streaming Protocol
+* **Status**: ACCEPTED
+* **Context**: Real-time agent thought streaming and incremental response rendering must be decoupled from internal framework implementations (e.g. LangGraph) so client applications (Web, Flutter) consume a stable contract.
+* **Decision**: SSE streaming (`/chat/stream`) emits a normalized event schema (`start`, `node`, `response`, `artifact`, `done`, `error`) with JSON payloads. Streaming preserves conversation state, checkpoints to SQLite, and maintains context summarization compatibility without duplicating graph logic.
