@@ -41,6 +41,8 @@ class ArtifactType(str, Enum):
     GEOFENCE_ALERT     = "geofence_alert"
     ADVISORY           = "advisory"
     LOCATION_CARD      = "location_card"
+    TIDE_CARD          = "tide_card"
+    HAZARD_ALERT       = "hazard_alert"
 
 
 class RiskLevel(str, Enum):
@@ -117,6 +119,8 @@ class SamudraState(TypedDict, total=False):
     marine_data:   dict[str, Any]    # Open-Meteo Marine (MODELLED waves/currents/SST/sea-level)
     geofence_data: dict[str, Any]    # Geofence / MPA check
     fishery_data:  dict[str, Any]    # PFZ heuristic / INCOIS
+    tide_data:     dict[str, Any]    # Phase 2.4 Tide dynamics
+    hazard_data:   dict[str, Any]    # Phase 2.4 Official hazard alert feed
 
     # ── 6. Anti-hallucination gate ────────────────────────────────────────────
     confidence_score: float          # 0.0 – 1.0

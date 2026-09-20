@@ -21,9 +21,18 @@ def risk_assessment_node(state: SamudraState) -> SamudraState:
     weather  = state.get("weather_data", {})
     geofence = state.get("geofence_data", {})
     marine   = state.get("marine_data", {})   # optional — may be None/empty
+    tide     = state.get("tide_data", {})
+    hazard   = state.get("hazard_data", {})
 
     try:
-        result = calculate_marine_risk(ocean, weather, geofence, marine or None)
+        result = calculate_marine_risk(
+            ocean,
+            weather,
+            geofence,
+            marine=marine or None,
+            tide_data=tide or None,
+            hazard_data=hazard or None,
+        )
         return {
             "risk_assessment": result,
             "node_trace": ["risk_assessment"],

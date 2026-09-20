@@ -59,6 +59,7 @@ from graph.nodes.data_weather import weather_data_node
 from graph.nodes.data_marine import marine_data_node
 from graph.nodes.data_fishery import fishery_data_node
 from graph.nodes.data_geofence import geofence_data_node
+from graph.nodes.data_tide_hazard import tide_hazard_data_node
 from graph.nodes.gate import anti_hallucination_gate_node
 from graph.nodes.reason_ocean import ocean_reasoning_node
 from graph.nodes.reason_weather import weather_reasoning_node
@@ -157,11 +158,12 @@ def build_graph() -> StateGraph:
     g.add_node("location_resolver",        location_node)
 
     # ── Parallel data collection ───────────────────────────────────────────────
-    g.add_node("ocean_data_collector",     ocean_data_node)
-    g.add_node("weather_data_collector",   weather_data_node)
-    g.add_node("marine_data_collector",    marine_data_node)
-    g.add_node("fishery_data_collector",   fishery_data_node)
-    g.add_node("geofence_data_collector",  geofence_data_node)
+    g.add_node("ocean_data_collector",       ocean_data_node)
+    g.add_node("weather_data_collector",     weather_data_node)
+    g.add_node("marine_data_collector",      marine_data_node)
+    g.add_node("fishery_data_collector",     fishery_data_node)
+    g.add_node("geofence_data_collector",    geofence_data_node)
+    g.add_node("tide_hazard_data_collector", tide_hazard_data_node)
 
     # ── Gate ───────────────────────────────────────────────────────────────────
     g.add_node("anti_hallucination_gate",  anti_hallucination_gate_node)
@@ -200,19 +202,21 @@ def build_graph() -> StateGraph:
     # Deep Path -> Location Resolver -> ...
     g.add_edge("planner",            "location_resolver")
 
-    # ── Fan-out: location → 5 parallel data collectors ────────────────────────
+    # ── Fan-out: location → parallel data collectors ──────────────────────────
     g.add_edge("location_resolver",  "ocean_data_collector")
     g.add_edge("location_resolver",  "weather_data_collector")
     g.add_edge("location_resolver",  "marine_data_collector")
     g.add_edge("location_resolver",  "fishery_data_collector")
     g.add_edge("location_resolver",  "geofence_data_collector")
+    g.add_edge("location_resolver",  "tide_hazard_data_collector")
 
-    # ── Fan-in: all 5 collectors → gate ───────────────────────────────────────
-    g.add_edge("ocean_data_collector",    "anti_hallucination_gate")
-    g.add_edge("weather_data_collector",  "anti_hallucination_gate")
-    g.add_edge("marine_data_collector",   "anti_hallucination_gate")
-    g.add_edge("fishery_data_collector",  "anti_hallucination_gate")
-    g.add_edge("geofence_data_collector", "anti_hallucination_gate")
+    # ── Fan-in: all collectors → gate ─────────────────────────────────────────
+    g.add_edge("ocean_data_collector",       "anti_hallucination_gate")
+    g.add_edge("weather_data_collector",     "anti_hallucination_gate")
+    g.add_edge("marine_data_collector",      "anti_hallucination_gate")
+    g.add_edge("fishery_data_collector",     "anti_hallucination_gate")
+    g.add_edge("geofence_data_collector",    "anti_hallucination_gate")
+    g.add_edge("tide_hazard_data_collector", "anti_hallucination_gate")
 
     # ── Conditional edge: gate decision ───────────────────────────────────────
     g.add_conditional_edges(

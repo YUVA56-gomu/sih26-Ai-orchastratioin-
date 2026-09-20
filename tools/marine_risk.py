@@ -24,6 +24,8 @@ def calculate_marine_risk(
     weather: dict,
     geofence: dict,
     marine: dict | None = None,
+    tide_data: dict | None = None,
+    hazard_data: dict | None = None,
 ) -> dict:
 
     score = 0
@@ -276,6 +278,45 @@ def calculate_marine_risk(
             reasons.append(
                 "Heavy precipitation signal."
             )
+
+    # ---------------------------------------------------------
+    # TIDE DYNAMICS (Phase 2.4)
+    # ---------------------------------------------------------
+    if tide_data and isinstance(tide_data, dict):
+        curr_tide = tide_data.get("current", {})
+        tide_phase = curr_tide.get("phase")
+        next_high = tide_data.get("next_high_tide")
+        is_high_tide_cond = (tide_phase == "FLOODING") or bool(next_high)
+        if wave_height is not None and wave_height >= 2.0 and is_high_tide_cond:
+            score += 15
+            reasons.append("High tide coincidence with heavy wave height (high coastal breaking/inundation hazard).")
+
+        tidal_range = _number(tide_data.get("tidal_range_m"))
+        if tidal_range is not None and tidal_range >= 2.5:
+            score += 10
+            reasons.append("Extreme tidal range (>= 2.5m) detected (strong tidal currents hazard).")
+
+    # ---------------------------------------------------------
+    # OFFICIAL HAZARD ALERTS (Phase 2.4)
+    # ---------------------------------------------------------
+    if hazard_data and isinstance(hazard_data, dict):
+        h_prov = hazard_data.get("provenance", {})
+        h_status = hazard_data.get("status")
+        if h_prov.get("data_class") == "OFFICIAL_BULLETIN" and h_status == "ACTIVE":
+            for alert in hazard_data.get("alerts", []):
+                if not isinstance(alert, dict):
+                    continue
+                sev = str(alert.get("severity", "")).upper()
+                title = alert.get("title", "Official Marine Hazard")
+                if sev in ("ADVISORY", "WATCH"):
+                    score += 20
+                    reasons.append(f"Official hazard advisory active: {title}")
+                elif sev == "WARNING":
+                    score += 35
+                    reasons.append(f"Official marine warning active: {title}")
+                elif sev == "SEVERE_WARNING":
+                    score += 50
+                    reasons.append(f"Official severe marine warning active: {title}")
 
     # ---------------------------------------------------------
     # GEOFENCE

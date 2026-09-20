@@ -185,6 +185,16 @@ SAMUDRA AI implements an evidence-grounded spatial PFZ intelligence pipeline:
 * **INCOIS Bulletin Structure**: `parse_incois_bulletin()` provides standardized schema handling for official bulletin records, returning status `UNAVAILABLE` when no live feed is configured without failing downstream analysis.
 * **Enriched `pfz_map` Artifact**: `create_pfz_map_artifact()` exports multi-candidate zones, thermal fronts, chlorophyll features, bulletin status, and data provenance entries.
 
+### 3.6 Tide Dynamics & Hazard Alert Architecture (Phase 2.4)
+
+SAMUDRA AI implements tide forecast dynamics and official hazard alert processing:
+
+* **Hourly Sea-Level Timeseries**: `get_tide_forecast()` consumes Open-Meteo Marine 48-hour sea-level timeseries (`sea_level_height_msl`).
+* **Numerical Extrema Detection**: `extract_tide_extrema()` calculates local peak (High tide) and trough (Low tide) extrema, current tidal phase (`FLOODING`/`EBBING`), trend (`RISING`/`FALLING`), and tidal range with explicit MSL model disclaimers (`data_class: "MODELLED"`).
+* **Official Hazard Bulletin Parser**: `parse_hazard_bulletin()` validates official advisory bulletins across 6 categories (`CYCLONE`, `HIGH_WAVE`, `SWELL_SURGE`, `TSUNAMI`, `GALE_WIND`, `COASTAL_FLOOD`) and 4 severities (`ADVISORY`, `WATCH`, `WARNING`, `SEVERE_WARNING`), defaulting safely to `status: "UNAVAILABLE"` (`data_class: "UNAVAILABLE"`) when unconfigured.
+* **Tide & Hazard Risk Scoring**: `calculate_marine_risk()` adds deterministic risk penalties for high-tide wave superposition ($\ge 2.0$ m wave during high tide $\rightarrow +15$ pts), extreme tidal range ($\ge 2.5$ m $\rightarrow +10$ pts), and active official warnings ($+20$ to $+50$ pts).
+* **`tide_card` & `hazard_alert` Artifacts**: `create_tide_card_artifact()` and `create_hazard_alert_artifact()` export structured UI payloads representing tidal extrema, phase, and official warning status.
+
 ---
 
 ## 4. ARTIFACT PROTOCOL

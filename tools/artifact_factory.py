@@ -230,3 +230,82 @@ def create_risk_summary_artifact(location: dict[str, Any], risk_assessment: dict
             "evaluated_parameters": risk_assessment.get("evaluated_parameters", {}),
         },
     )
+
+
+def create_tide_card_artifact(location: dict[str, Any], tide_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    """Build a tide forecast card artifact."""
+    if not isinstance(location, dict) or location.get("status") != "FOUND":
+        return None
+    if not isinstance(tide_data, dict) or tide_data.get("status") in ("SKIPPED", "BLOCKED", "ERROR", None):
+        return None
+
+    lat = location.get("latitude")
+    lon = location.get("longitude")
+    name = location.get("name", "Selected Region")
+    curr = tide_data.get("current", {})
+    next_high = tide_data.get("next_high_tide") or {}
+    next_low = tide_data.get("next_low_tide") or {}
+
+    desc_parts = []
+    if curr.get("sea_level_m") is not None:
+        desc_parts.append(f"Sea Level: {curr.get('sea_level_m')}m")
+    if curr.get("phase"):
+        desc_parts.append(f"Phase: {curr.get('phase')}")
+    if next_high.get("height_m") is not None:
+        desc_parts.append(f"Next High: {next_high.get('height_m')}m")
+
+    return create_artifact(
+        artifact_type="tide_card",
+        artifact_id=f"tide_card_{lat}_{lon}",
+        title=f"Tide Dynamics — {name}",
+        description=" | ".join(desc_parts) if desc_parts else f"Tide information for {name}",
+        data={
+            "location": {"name": name, "latitude": lat, "longitude": lon},
+            "status": tide_data.get("status", "AVAILABLE"),
+            "current": curr,
+            "extrema": tide_data.get("extrema", []),
+            "next_high_tide": next_high,
+            "next_low_tide": next_low,
+            "hourly_timeseries": tide_data.get("hourly_timeseries", []),
+            "tidal_range_m": tide_data.get("tidal_range_m"),
+            "datum": tide_data.get("datum", "MSL_MODELLED"),
+            "provenance": tide_data.get("provenance", {}),
+            "disclaimer": tide_data.get("disclaimer", ""),
+        },
+    )
+
+
+def create_hazard_alert_artifact(location: dict[str, Any], hazard_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    """Build an official hazard alert card artifact."""
+    if not isinstance(location, dict) or location.get("status") != "FOUND":
+        return None
+    if not isinstance(hazard_data, dict):
+        return None
+
+    lat = location.get("latitude")
+    lon = location.get("longitude")
+    name = location.get("name", "Selected Region")
+    status = hazard_data.get("status", "UNAVAILABLE")
+    alerts = hazard_data.get("alerts", [])
+
+    if status == "ACTIVE" and alerts:
+        first_alert = alerts[0] if isinstance(alerts[0], dict) else {}
+        title = f"Official Warning: {first_alert.get('title', 'Marine Hazard')}"
+        desc = f"Severity: {first_alert.get('severity', 'ADVISORY')} | Source: {first_alert.get('source', 'INCOIS')}"
+    else:
+        title = f"Official Hazard Feed — {name}"
+        desc = "No active official hazard alerts reported for this location."
+
+    return create_artifact(
+        artifact_type="hazard_alert",
+        artifact_id=f"hazard_alert_{lat}_{lon}",
+        title=title,
+        description=desc,
+        data={
+            "location": {"name": name, "latitude": lat, "longitude": lon},
+            "status": status,
+            "alerts": alerts,
+            "advice": hazard_data.get("advice", ""),
+            "provenance": hazard_data.get("provenance", {}),
+        },
+    )
