@@ -61,6 +61,7 @@ class SamudraState(TypedDict, total=False):
         operator.add                 # Append across turns (backward compatibility)
     ]
     active_context: ActiveContext     # Persistent active context across conversation turns
+    route_path: str                  # Execution path taken: "FAST" | "DEEP"
 
     # ── 2. Language layer ─────────────────────────────────────────────────────
     detected_language: str           # ISO 639-1 code e.g. "ta", "en", "hi"

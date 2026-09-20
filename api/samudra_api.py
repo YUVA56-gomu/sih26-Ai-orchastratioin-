@@ -147,6 +147,7 @@ def map_config(parameter: str):
 _NODE_METADATA = {
     "language_detection": ("🌐", "Language Detection Agent"),
     "intent_router": ("🧭", "Intent Router Agent"),
+    "fast_responder": ("⚡", "Fast Response Agent"),
     "planner": ("📋", "Decomposition Planner Agent"),
     "location_resolver": ("📍", "Location Resolver Agent"),
     "ocean_data_collector": ("🌊", "Copernicus Ocean Data Collector"),
@@ -180,6 +181,11 @@ def build_node_thought(node_name: str, node_output: dict) -> tuple[str, str, str
         intent = node_output.get("intent", "general")
         thought = f"Classified primary intent as: {str(intent).upper()}."
         summary_data = {"intent": intent}
+
+    elif node_name == "fast_responder":
+        resp = node_output.get("final_response_english", "")
+        thought = "Executed simple query via Fast Path ⚡."
+        summary_data = {"response_snippet": resp[:150] + "..." if len(resp) > 150 else resp}
 
     elif node_name == "planner":
         plan = node_output.get("plan", {})
@@ -307,20 +313,24 @@ async def chat(request: ChatRequest):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Graph execution error: {exc}")
 
-    risk = result.get("risk_assessment", {})
-    risk_level = risk.get("risk_level", "UNKNOWN")
-    risk_score = int(risk.get("risk_score", -1))
+    route_path = result.get("route_path", "DEEP")
+    risk = result.get("risk_assessment")
+    risk_level = risk.get("risk_level") if isinstance(risk, dict) else None
+    risk_score = int(risk.get("risk_score")) if isinstance(risk, dict) and risk.get("risk_score") is not None else None
+    confidence_score = float(result["confidence_score"]) if "confidence_score" in result else None
+    gate_decision = result.get("gate_decision")
 
     return ChatResponse(
         conversation_id=conv_id,
         thread_id=t_id,
         response=result.get("final_response") or result.get("final_response_english", ""),
+        route_path=route_path,
         detected_language=result.get("detected_language", "en"),
         intent=str(result.get("intent", "general")),
         risk_level=risk_level,
         risk_score=risk_score,
-        confidence_score=float(result.get("confidence_score", 1.0)),
-        gate_decision=result.get("gate_decision", "PASS"),
+        confidence_score=confidence_score,
+        gate_decision=gate_decision,
         node_trace=result.get("node_trace", []),
         errors=result.get("errors", []),
         location=result.get("location"),
@@ -398,18 +408,19 @@ async def chat_stream(
                         await asyncio.sleep(0.05)
 
             # Final response compilation
-            risk = final_state.get("risk_assessment", {})
+            risk = final_state.get("risk_assessment")
             response_text = final_state.get("final_response") or final_state.get("final_response_english", "Analysis complete.")
             done_payload = {
                 "conversation_id": conv_id,
                 "thread_id": t_id,
                 "response": response_text,
+                "route_path": final_state.get("route_path", "DEEP"),
                 "detected_language": final_state.get("detected_language", "en"),
                 "intent": str(final_state.get("intent", "general")),
-                "risk_level": risk.get("risk_level", "UNKNOWN"),
-                "risk_score": int(risk.get("risk_score", -1)),
-                "confidence_score": float(final_state.get("confidence_score", 1.0)),
-                "gate_decision": final_state.get("gate_decision", "PASS"),
+                "risk_level": risk.get("risk_level") if isinstance(risk, dict) else None,
+                "risk_score": int(risk.get("risk_score")) if isinstance(risk, dict) and risk.get("risk_score") is not None else None,
+                "confidence_score": float(final_state["confidence_score"]) if "confidence_score" in final_state else None,
+                "gate_decision": final_state.get("gate_decision"),
                 "node_trace": final_state.get("node_trace", []),
                 "location": final_state.get("location"),
                 "active_context": final_state.get("active_context"),

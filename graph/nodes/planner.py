@@ -91,12 +91,14 @@ def planner_node(state: SamudraState) -> SamudraState:
 
         return {
             "plan": plan,
+            "route_path": "DEEP",
             "node_trace": ["planner"],
         }
 
     except Exception as exc:
         return {
             "plan": _FALLBACK_PLAN,
+            "route_path": "DEEP",
             "errors": [f"planner_node: {exc}"],
             "node_trace": ["planner"],
         }

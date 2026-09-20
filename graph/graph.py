@@ -46,9 +46,10 @@ from __future__ import annotations
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
-from state.schema import SamudraState
+from state.schema import SamudraState, IntentType
 from graph.nodes.language import language_detection_node
 from graph.nodes.intent import intent_router_node
+from graph.nodes.fast_responder import fast_responder_node
 from graph.nodes.planner import planner_node
 from graph.nodes.location import location_node
 from graph.nodes.data_ocean import ocean_data_node
@@ -64,6 +65,61 @@ from graph.nodes.reason_safety import safety_reasoning_node
 from graph.nodes.risk import risk_assessment_node
 from graph.nodes.synthesizer import synthesizer_node
 from graph.nodes.translate_out import translate_out_node
+
+
+# ── Conditional edge: Fast / Deep Router ────────────────────────────────────
+
+def route_fast_or_deep(state: SamudraState) -> str:
+    """
+    Decide whether query executes via FAST ⚡ path or DEEP 🧠 path.
+    Returns: "fast" | "deep"
+    Conservative default: "deep"
+    """
+    raw_query = state.get("user_query", "")
+    query = state.get("query_in_english") or raw_query
+    lower_q = query.lower().strip().rstrip("?.!")
+    intent = state.get("intent", IntentType.GENERAL)
+
+    # DEEP CRITERIA (Safety, Navigation, Risk, Multi-domain, Recommendations, Route, Complex Reasoning)
+    if intent in (IntentType.SAFETY, IntentType.NAVIGATION):
+        return "deep"
+
+    safety_risk_keywords = [
+        "safe", "safety", "risk", "hazard", "warning", "caution",
+        "can i go", "can we go", "should i go", "is it safe", "able to fish",
+        "route", "path", "navigate", "navigation", "avoid",
+        "nearest pfz", "best zone", "which zone", "which spot", "recommend",
+        "why", "how does it affect", "compare", "decline", "cause"
+    ]
+    if any(kw in lower_q for kw in safety_risk_keywords):
+        return "deep"
+
+    # Multi-condition temporal requests with action
+    if any(t in lower_q for t in ["tomorrow", "next 3 days", "forecast"]):
+        if any(w in lower_q for w in ["go", "fish", "fishing", "sail", "voyage"]):
+            return "deep"
+
+    # FAST CRITERIA
+    greetings = {"hi", "hello", "hey", "good morning", "good evening", "good day", "greetings", "namaste"}
+    identity = {"who are you", "what can you do", "how can you help", "what is samudra", "who made you"}
+    chitchat = {"thanks", "thank you", "okay", "ok", "got it", "goodbye", "bye", "cool", "great"}
+
+    if lower_q in greetings or lower_q in identity or lower_q in chitchat:
+        return "fast"
+    if any(lower_q.startswith(g) for g in ["hi ", "hello ", "hey ", "thanks"]):
+        return "fast"
+
+    # Simple definitions ("what is pfz", "what is sst", "what is wave height", "explain chlorophyll")
+    if any(lower_q.startswith(prefix) for prefix in ["what is ", "what are ", "explain ", "tell me about ", "define "]):
+        return "fast"
+
+    # Simple single-tool inquiries ("what is the weather near karwar?", "what are the waves near karwar?", "what is the sst near karwar?")
+    single_tool_keywords = ["weather", "wind", "waves", "wave", "sst", "temperature"]
+    if any(kw in lower_q for kw in single_tool_keywords) and not any(kw in lower_q for kw in ["safe", "safety", "recommend", "best", "which", "should"]):
+        return "fast"
+
+    # Conservative default
+    return "deep"
 
 
 # ── Conditional edge: gate decision ──────────────────────────────────────────
@@ -93,6 +149,7 @@ def build_graph() -> StateGraph:
     # ── Sequential pipeline ───────────────────────────────────────────────────
     g.add_node("language_detection",       language_detection_node)
     g.add_node("intent_router",            intent_router_node)
+    g.add_node("fast_responder",           fast_responder_node)
     g.add_node("planner",                  planner_node)
     g.add_node("location_resolver",        location_node)
 
@@ -119,10 +176,24 @@ def build_graph() -> StateGraph:
     g.add_node("synthesizer",              synthesizer_node)
     g.add_node("translate_out",            translate_out_node)
 
-    # ── Edges: sequential head ────────────────────────────────────────────────
+    # ── Edges: sequential head & Fast/Deep router ──────────────────────────────
     g.add_edge(START,                "language_detection")
     g.add_edge("language_detection", "intent_router")
-    g.add_edge("intent_router",      "planner")
+
+    # Fast/Deep router decision
+    g.add_conditional_edges(
+        "intent_router",
+        route_fast_or_deep,
+        {
+            "fast": "fast_responder",
+            "deep": "planner",
+        }
+    )
+
+    # Fast Path -> Translate Out -> END
+    g.add_edge("fast_responder",     "translate_out")
+
+    # Deep Path -> Location Resolver -> ...
     g.add_edge("planner",            "location_resolver")
 
     # ── Fan-out: location → 5 parallel data collectors ────────────────────────
