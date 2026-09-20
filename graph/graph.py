@@ -17,6 +17,7 @@ Full pipeline:
   │  parallel_data_collection        │
   │  ├── ocean_data_collector        │
   │  ├── weather_data_collector      │
+  │  ├── marine_data_collector       │
   │  ├── fishery_data_collector      │
   │  └── geofence_data_collector     │
   └────┬─────────────────────────────┘
@@ -52,6 +53,7 @@ from graph.nodes.planner import planner_node
 from graph.nodes.location import location_node
 from graph.nodes.data_ocean import ocean_data_node
 from graph.nodes.data_weather import weather_data_node
+from graph.nodes.data_marine import marine_data_node
 from graph.nodes.data_fishery import fishery_data_node
 from graph.nodes.data_geofence import geofence_data_node
 from graph.nodes.gate import anti_hallucination_gate_node
@@ -97,6 +99,7 @@ def build_graph() -> StateGraph:
     # ── Parallel data collection ───────────────────────────────────────────────
     g.add_node("ocean_data_collector",     ocean_data_node)
     g.add_node("weather_data_collector",   weather_data_node)
+    g.add_node("marine_data_collector",    marine_data_node)
     g.add_node("fishery_data_collector",   fishery_data_node)
     g.add_node("geofence_data_collector",  geofence_data_node)
 
@@ -122,15 +125,17 @@ def build_graph() -> StateGraph:
     g.add_edge("intent_router",      "planner")
     g.add_edge("planner",            "location_resolver")
 
-    # ── Fan-out: location → 4 parallel data collectors ────────────────────────
+    # ── Fan-out: location → 5 parallel data collectors ────────────────────────
     g.add_edge("location_resolver",  "ocean_data_collector")
     g.add_edge("location_resolver",  "weather_data_collector")
+    g.add_edge("location_resolver",  "marine_data_collector")
     g.add_edge("location_resolver",  "fishery_data_collector")
     g.add_edge("location_resolver",  "geofence_data_collector")
 
-    # ── Fan-in: all 4 collectors → gate ───────────────────────────────────────
+    # ── Fan-in: all 5 collectors → gate ───────────────────────────────────────
     g.add_edge("ocean_data_collector",    "anti_hallucination_gate")
     g.add_edge("weather_data_collector",  "anti_hallucination_gate")
+    g.add_edge("marine_data_collector",   "anti_hallucination_gate")
     g.add_edge("fishery_data_collector",  "anti_hallucination_gate")
     g.add_edge("geofence_data_collector", "anti_hallucination_gate")
 

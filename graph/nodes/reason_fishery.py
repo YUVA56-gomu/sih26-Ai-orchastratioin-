@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from state.schema import SamudraState
 from graph.llm import get_llm
+from graph.nodes.utils import extract_text
 from prompts import FISHERY_REASONER
 
 
@@ -43,7 +44,7 @@ def fishery_reasoning_node(state: SamudraState) -> SamudraState:
         ]
         response = llm.invoke(messages)
         return {
-            "fishery_reasoning": response.content.strip(),
+            "fishery_reasoning": extract_text(response),
             "node_trace": ["fishery_reasoner"],
         }
     except Exception as exc:

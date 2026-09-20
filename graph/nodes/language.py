@@ -16,6 +16,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from state.schema import SamudraState
 from graph.llm import get_llm
+from graph.nodes.utils import extract_text
 
 _TRANSLATION_PROMPT = """
 You are a translation assistant.
@@ -54,7 +55,7 @@ def language_detection_node(state: SamudraState) -> SamudraState:
             HumanMessage(content=query),
         ]
         response = llm.invoke(messages)
-        raw = response.content.strip()
+        raw = extract_text(response)
 
         # Strip markdown code fences if present
         if raw.startswith("```"):

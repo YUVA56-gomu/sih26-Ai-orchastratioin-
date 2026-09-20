@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from state.schema import SamudraState
 from graph.llm import get_llm
+from graph.nodes.utils import extract_text
 from prompts import WEATHER_REASONER
 
 
@@ -49,7 +50,7 @@ def weather_reasoning_node(state: SamudraState) -> SamudraState:
         ]
         response = llm.invoke(messages)
         return {
-            "weather_reasoning": response.content.strip(),
+            "weather_reasoning": extract_text(response),
             "node_trace": ["weather_reasoner"],
         }
     except Exception as exc:

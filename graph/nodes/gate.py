@@ -18,6 +18,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from state.schema import SamudraState
 from graph.llm import get_llm
+from graph.nodes.utils import extract_text
 from prompts import ANTI_HALLUCINATION_GATE
 
 _MAX_RECHECK = 2
@@ -38,6 +39,9 @@ def _summarise_evidence(state: SamudraState) -> str:
 
     weather = state.get("weather_data", {})
     parts.append(f"WEATHER DATA (status={weather.get('status','?')}):\n{json.dumps(weather, indent=2)[:800]}")
+
+    marine = state.get("marine_data", {})
+    parts.append(f"MARINE DATA (status={marine.get('status','?')}, type={marine.get('data_type','?')}):\n{json.dumps(marine, indent=2)[:600]}")
 
     fishery = state.get("fishery_data", {})
     parts.append(f"FISHERY DATA (status={fishery.get('status','?')}):\n{json.dumps(fishery, indent=2)[:400]}")
@@ -79,7 +83,7 @@ def anti_hallucination_gate_node(state: SamudraState) -> SamudraState:
             HumanMessage(content=evidence_summary),
         ]
         response = llm.invoke(messages)
-        raw = response.content.strip()
+        raw = extract_text(response)
 
         if raw.startswith("```"):
             raw = raw.split("```")[1]

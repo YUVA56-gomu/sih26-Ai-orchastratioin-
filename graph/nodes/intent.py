@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from state.schema import SamudraState, IntentType
 from graph.llm import get_llm
+from graph.nodes.utils import extract_text
 from prompts import INTENT_ROUTER
 
 
@@ -35,7 +36,7 @@ def intent_router_node(state: SamudraState) -> SamudraState:
             HumanMessage(content=query),
         ]
         response = llm.invoke(messages)
-        raw = response.content.strip()
+        raw = extract_text(response)
 
         if raw.startswith("```"):
             raw = raw.split("```")[1]

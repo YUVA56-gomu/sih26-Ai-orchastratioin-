@@ -1,5 +1,6 @@
 # ignore .venv files
 .venv/
+venv/
 
 # ignore .adk files
 .adk/

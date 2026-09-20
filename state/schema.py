@@ -76,6 +76,7 @@ class SamudraState(TypedDict, total=False):
     # ── 5. Raw evidence (parallel data collection) ────────────────────────────
     ocean_data:    dict[str, Any]    # Copernicus Marine snapshot
     weather_data:  dict[str, Any]    # Open-Meteo forecast
+    marine_data:   dict[str, Any]    # Open-Meteo Marine (MODELLED waves/currents/SST/sea-level)
     geofence_data: dict[str, Any]    # Geofence / MPA check
     fishery_data:  dict[str, Any]    # PFZ heuristic / INCOIS
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>ORCA — Ocean Intelligence</title>
+    <title>ORCA — Ocean Intelligence & AI Agent Assistant</title>
 
     <!-- Leaflet -->
     <link
@@ -94,6 +94,50 @@
             text-transform: uppercase;
         }
 
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .agent-toggle-btn {
+            background: linear-gradient(135deg, rgba(0, 198, 255, 0.2), rgba(0, 102, 255, 0.3));
+            border: 1px solid rgba(0, 198, 255, 0.5);
+            color: #38bdf8;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(0, 198, 255, 0.15);
+        }
+
+        .agent-toggle-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 198, 255, 0.3), rgba(0, 102, 255, 0.5));
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 198, 255, 0.3);
+        }
+
+        .graph-btn {
+            background: rgba(15, 30, 50, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #94a3b8;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .graph-btn:hover {
+            border-color: #00b7ff;
+            color: white;
+        }
+
         .system-status {
             display: flex;
             align-items: center;
@@ -127,11 +171,11 @@
         }
 
         .sidebar {
-            width: 330px;
+            width: 310px;
             flex-shrink: 0;
             background: rgba(7, 18, 33, 0.98);
             border-right: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 18px;
+            padding: 16px;
             overflow-y: auto;
             z-index: 900;
         }
@@ -146,6 +190,404 @@
             width: 100%;
             height: 100%;
             background: #0a1727;
+        }
+
+        /* =========================================================
+           CHATBOT DRAWER & AGENT THINKING UI
+        ========================================================= */
+
+        .chat-drawer {
+            width: 440px;
+            flex-shrink: 0;
+            background: rgba(6, 16, 29, 0.98);
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            z-index: 950;
+            transition: all 0.25s ease;
+        }
+
+        .chat-drawer.closed {
+            display: none;
+        }
+
+        .chat-header {
+            padding: 14px 18px;
+            background: rgba(10, 24, 43, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-title h2 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-subtitle {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .close-chat-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .close-chat-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-message {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 100%;
+        }
+
+        .chat-message.user {
+            align-self: flex-end;
+            max-width: 85%;
+        }
+
+        .chat-message.user .message-bubble {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: white;
+            border-radius: 14px 14px 2px 14px;
+            padding: 10px 14px;
+            font-size: 12.5px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+        }
+
+        .chat-message.assistant {
+            align-self: flex-start;
+            width: 100%;
+        }
+
+        .chat-message.assistant .message-bubble {
+            background: rgba(15, 30, 52, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px 14px 14px 2px;
+            padding: 14px;
+            font-size: 12.5px;
+            color: #e2e8f0;
+            line-height: 1.55;
+        }
+
+        /* AGENT THINKING CONTAINER */
+
+        .agent-thinking-box {
+            background: rgba(10, 22, 40, 0.95);
+            border: 1px solid rgba(0, 183, 255, 0.25);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .agent-thinking-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(0, 183, 255, 0.15);
+        }
+
+        .agent-thinking-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #34d399;
+        }
+
+        .agent-step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .agent-step-item {
+            background: rgba(6, 14, 26, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+
+        .agent-step-item.active {
+            border-color: rgba(0, 183, 255, 0.6);
+            background: rgba(12, 34, 58, 0.9);
+            box-shadow: 0 0 10px rgba(0, 183, 255, 0.15);
+        }
+
+        .agent-step-item.completed {
+            border-color: rgba(52, 211, 153, 0.3);
+        }
+
+        .agent-step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .agent-step-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .agent-step-thought {
+            margin-top: 4px;
+            color: #94a3b8;
+            font-size: 10.5px;
+            line-height: 1.4;
+        }
+
+        .agent-step-details-toggle {
+            font-size: 9.5px;
+            color: #38bdf8;
+            cursor: pointer;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        .agent-step-details {
+            margin-top: 6px;
+            padding: 8px;
+            background: #040a12;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 9.5px;
+            color: #7dd3fc;
+            max-height: 120px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            display: none;
+        }
+
+        .agent-step-details.show {
+            display: block;
+        }
+
+        /* BADGES IN RESPONSES */
+
+        .response-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .badge-pill {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-risk-LOW { background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+        .badge-risk-MODERATE { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+        .badge-risk-HIGH { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+        .badge-risk-VERY_HIGH { background: rgba(239, 68, 68, 0.25); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5); }
+        .badge-intent { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); }
+
+        /* CHAT INPUT AREA */
+
+        .chat-input-area {
+            padding: 14px;
+            background: rgba(8, 20, 36, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-chips {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .chip-btn {
+            background: #0f233a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            padding: 5px 10px;
+            border-radius: 14px;
+            font-size: 10.5px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .chip-btn:hover {
+            border-color: #00b7ff;
+            color: #38bdf8;
+            background: #122b48;
+        }
+
+        .chat-input-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: #09182a;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #eaf3ff;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: #00b7ff;
+            box-shadow: 0 0 12px rgba(0, 183, 255, 0.2);
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #007cf0, #00b7ff);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0 16px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 183, 255, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* =========================================================
+           GRAPH MODAL
+        ========================================================= */
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2500;
+            background: rgba(3, 8, 16, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-card {
+            background: #081628;
+            border: 1px solid rgba(0, 183, 255, 0.3);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 15px;
+            color: #38bdf8;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .graph-nodes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .graph-node-card {
+            background: rgba(12, 28, 48, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+
+        .graph-node-card.active-node {
+            border-color: #38bdf8;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+            background: rgba(14, 40, 70, 0.95);
+        }
+
+        .graph-node-title {
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 4px;
+        }
+
+        .graph-node-type {
+            font-size: 9.5px;
+            color: #64748b;
+            text-transform: uppercase;
         }
 
         /* =========================================================
@@ -362,9 +804,7 @@
             line-height: 1.5;
         }
 
-        /* =========================================================
-           MAP CONTROLS
-        ========================================================= */
+        /* MAP CONTROLS */
 
         .map-overlay {
             position: absolute;
@@ -374,31 +814,30 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            width: 240px;
+            width: 220px;
         }
 
         .glass-card {
             background: rgba(7, 17, 31, 0.88);
             backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.09);
             border-radius: 13px;
-            padding: 13px;
+            padding: 12px;
             box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28);
         }
 
         .map-card-title {
-            margin: 0 0 8px;
-            font-size: 11px;
+            margin: 0 0 6px;
+            font-size: 10.5px;
             text-transform: uppercase;
             color: #8199b4;
             letter-spacing: 1px;
         }
 
         .layer-status {
-            font-size: 12px;
+            font-size: 11.5px;
             color: #dce8f5;
-            line-height: 1.45;
+            line-height: 1.4;
         }
 
         .legend {
@@ -406,49 +845,35 @@
             z-index: 700;
             bottom: 24px;
             right: 18px;
-            width: 220px;
+            width: 200px;
             background: rgba(7, 17, 31, 0.88);
             backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.09);
             border-radius: 13px;
-            padding: 12px;
+            padding: 10px;
             display: none;
         }
 
         .legend-title {
-            font-size: 11px;
+            font-size: 10px;
             color: #9eb3c9;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 700;
         }
 
         .legend-bar {
-            height: 10px;
+            height: 8px;
             border-radius: 999px;
-            background:
-                linear-gradient(
-                    90deg,
-                    #081d58,
-                    #006eff,
-                    #00cfff,
-                    #4dde8b,
-                    #ffe45f,
-                    #ff8638,
-                    #cb253c
-                );
+            background: linear-gradient(90deg, #081d58, #006eff, #00cfff, #4dde8b, #ffe45f, #ff8638, #cb253c);
         }
 
         .legend-labels {
-            margin-top: 6px;
+            margin-top: 4px;
             display: flex;
             justify-content: space-between;
             color: #7189a2;
-            font-size: 9px;
+            font-size: 8.5px;
         }
-
-        /* =========================================================
-           BOTTOM STATUS BAR
-        ========================================================= */
 
         .bottom-bar {
             position: absolute;
@@ -457,8 +882,7 @@
             bottom: 18px;
             display: flex;
             align-items: center;
-            gap: 9px;
-            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .status-pill {
@@ -467,13 +891,11 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: #9db0c5;
             border-radius: 999px;
-            padding: 8px 11px;
-            font-size: 10px;
+            padding: 6px 10px;
+            font-size: 9.5px;
         }
 
-        /* =========================================================
-           LOADING
-        ========================================================= */
+        /* LOADING OVERLAY */
 
         .loading {
             position: fixed;
@@ -516,69 +938,17 @@
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
-        /* =========================================================
-           LEAFLET
-        ========================================================= */
-
-        .leaflet-control-zoom {
-            border: none !important;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
-        }
-
-        .leaflet-control-zoom a {
-            background: rgba(7, 17, 31, 0.9) !important;
-            color: #d7e5f4 !important;
-            border: none !important;
-        }
-
-        .leaflet-control-attribution {
-            background: rgba(7, 17, 31, 0.76) !important;
-            color: #7189a0 !important;
-        }
-
-        .leaflet-control-attribution a {
-            color: #8ea9c2 !important;
-        }
-
-        /* =========================================================
-           RESPONSIVE
-        ========================================================= */
-
-        @media (max-width: 900px) {
-            .sidebar {
-                width: 285px;
-            }
-
-            .map-overlay {
-                width: 200px;
-            }
-        }
-
-        @media (max-width: 700px) {
-            .app {
-                flex-direction: column;
-            }
-
-            .sidebar {
-                width: 100%;
-                height: 320px;
-                border-right: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            }
-
-            .map-section {
-                min-height: 0;
-            }
-
-            .map-overlay {
-                top: 10px;
-                right: 10px;
-                width: 185px;
+        @media (max-width: 1024px) {
+            .chat-drawer {
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 380px;
+                box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
             }
         }
     </style>
@@ -594,399 +964,200 @@
 
         <div class="brand">
             <div class="logo">O</div>
-
             <div class="brand-text">
                 <h1>ORCA</h1>
                 <span>Ocean Intelligence Platform</span>
             </div>
         </div>
 
+        <div class="nav-controls">
+            <button class="agent-toggle-btn" onclick="toggleChatDrawer()">
+                🤖 AI Agent Thinking Stream
+            </button>
+            <button class="graph-btn" onclick="openGraphModal()">
+                🌐 Graph Pipeline
+            </button>
+        </div>
+
         <div class="system-status">
             <div id="statusDot" class="status-dot"></div>
-            <span id="systemStatus">Connecting to Marine Gateway...</span>
+            <span id="systemStatus">Connecting...</span>
         </div>
 
     </header>
 
 
     <!-- =========================================================
-         MAIN APP
+         MAIN APP LAYOUT
     ========================================================= -->
 
     <main class="app">
 
-        <!-- =====================================================
-             SIDEBAR
-        ===================================================== -->
-
+        <!-- SIDEBAR -->
         <aside class="sidebar">
 
             <section class="section">
-
-                <h2 class="section-title">
-                    Marine Parameter
-                </h2>
-
+                <h2 class="section-title">Marine Parameter</h2>
                 <div class="parameter-grid">
-
-                    <button
-                        class="parameter-btn active"
-                        data-parameter="sst"
-                        onclick="selectParameter('sst')"
-                    >
-                        <span class="parameter-name">
-                            Sea Surface Temperature
-                        </span>
-
-                        <span class="parameter-key">
-                            SST
-                        </span>
+                    <button class="parameter-btn active" data-parameter="sst" onclick="selectParameter('sst')">
+                        <span class="parameter-name">Sea Surface Temp</span>
+                        <span class="parameter-key">SST</span>
                     </button>
-
-
-                    <button
-                        class="parameter-btn"
-                        data-parameter="currents"
-                        onclick="selectParameter('currents')"
-                    >
-                        <span class="parameter-name">
-                            Ocean Currents
-                        </span>
-
-                        <span class="parameter-key">
-                            CURRENT
-                        </span>
+                    <button class="parameter-btn" data-parameter="currents" onclick="selectParameter('currents')">
+                        <span class="parameter-name">Ocean Currents</span>
+                        <span class="parameter-key">CURRENT</span>
                     </button>
-
-
-                    <button
-                        class="parameter-btn"
-                        data-parameter="waves"
-                        onclick="selectParameter('waves')"
-                    >
-                        <span class="parameter-name">
-                            Wave Height
-                        </span>
-
-                        <span class="parameter-key">
-                            WAVE
-                        </span>
+                    <button class="parameter-btn" data-parameter="waves" onclick="selectParameter('waves')">
+                        <span class="parameter-name">Wave Height</span>
+                        <span class="parameter-key">WAVE</span>
                     </button>
-
-
-                    <button
-                        class="parameter-btn"
-                        data-parameter="chlorophyll"
-                        onclick="selectParameter('chlorophyll')"
-                    >
-                        <span class="parameter-name">
-                            Chlorophyll
-                        </span>
-
-                        <span class="parameter-key">
-                            CHL
-                        </span>
+                    <button class="parameter-btn" data-parameter="chlorophyll" onclick="selectParameter('chlorophyll')">
+                        <span class="parameter-name">Chlorophyll</span>
+                        <span class="parameter-key">CHL</span>
                     </button>
-
                 </div>
-
             </section>
 
-
-            <!-- =================================================
-                 LOCATION
-            ================================================== -->
-
             <section class="section">
-
-                <h2 class="section-title">
-                    Location
-                </h2>
-
+                <h2 class="section-title">Location</h2>
                 <div class="control-group">
-
                     <div class="coordinate-grid">
-
                         <div>
-                            <label for="latitude">
-                                Latitude
-                            </label>
-
-                            <input
-                                id="latitude"
-                                type="number"
-                                value="17.6935"
-                                step="0.0001"
-                            />
+                            <label for="latitude">Latitude</label>
+                            <input id="latitude" type="number" value="17.6935" step="0.0001" />
                         </div>
-
-
                         <div>
-                            <label for="longitude">
-                                Longitude
-                            </label>
-
-                            <input
-                                id="longitude"
-                                type="number"
-                                value="83.2921"
-                                step="0.0001"
-                            />
+                            <label for="longitude">Longitude</label>
+                            <input id="longitude" type="number" value="83.2921" step="0.0001" />
                         </div>
-
                     </div>
-
-
-                    <button
-                        class="action-btn"
-                        onclick="loadPointData()"
-                    >
-                        Analyse Location
-                    </button>
-
-
-                    <button
-                        class="secondary-btn"
-                        onclick="goToVisakhapatnam()"
-                    >
-                        Go to Visakhapatnam
-                    </button>
-
+                    <button class="action-btn" onclick="loadPointData()">Analyse Location</button>
+                    <button class="secondary-btn" onclick="goToVisakhapatnam()">Go to Visakhapatnam</button>
                 </div>
-
             </section>
 
-
-            <!-- =================================================
-                 DATA SUMMARY
-            ================================================== -->
-
             <section class="section">
-
-                <h2 class="section-title">
-                    Marine Intelligence
-                </h2>
-
+                <h2 class="section-title">Marine Intelligence</h2>
                 <div class="data-card">
-
                     <div class="data-status">
-
-                        <div class="data-status-title">
-                            Observation
-                        </div>
-
-                        <div
-                            id="dataBadge"
-                            class="badge"
-                        >
-                            READY
-                        </div>
-
+                        <div class="data-status-title">Observation</div>
+                        <div id="dataBadge" class="badge">READY</div>
                     </div>
-
-
                     <div id="dataContent">
-
-                        <div class="empty-state">
-                            Select a marine parameter or analyse a
-                            location to retrieve live Copernicus data.
-                        </div>
-
+                        <div class="empty-state">Select a parameter or analyse location.</div>
                     </div>
-
                 </div>
-
             </section>
 
-
-            <!-- =================================================
-                 API INFORMATION
-            ================================================== -->
-
             <section class="section">
-
-                <h2 class="section-title">
-                    Backend
-                </h2>
-
+                <h2 class="section-title">Backend Status</h2>
                 <div class="data-card">
-
                     <div class="metric">
-
-                        <div class="metric-label">
-                            Marine Gateway
-                        </div>
-
-                        <div
-                            id="apiStatus"
-                            class="metric-value"
-                            style="font-size: 13px;"
-                        >
-                            Checking...
-                        </div>
-
+                        <div class="metric-label">Marine Gateway</div>
+                        <div id="apiStatus" class="metric-value" style="font-size: 13px;">Checking...</div>
                     </div>
-
-
                     <div class="metric">
-
-                        <div class="metric-label">
-                            Active parameter
-                        </div>
-
-                        <div
-                            id="activeParameter"
-                            class="metric-value"
-                            style="font-size: 15px;"
-                        >
-                            SST
-                        </div>
-
+                        <div class="metric-label">LangGraph Engine</div>
+                        <div class="metric-value" style="font-size: 13px; color: #38bdf8;">17 Active Agents</div>
                     </div>
-
                 </div>
-
             </section>
 
         </aside>
 
-
-        <!-- =====================================================
-             MAP
-        ====================================================== -->
-
+        <!-- MAP SECTION -->
         <section class="map-section">
-
             <div id="map"></div>
 
-
-            <!-- Map information -->
             <div class="map-overlay">
-
                 <div class="glass-card">
-
-                    <h3 class="map-card-title">
-                        Active Layer
-                    </h3>
-
-                    <div
-                        id="layerStatus"
-                        class="layer-status"
-                    >
-                        Loading SST layer...
-                    </div>
-
+                    <h3 class="map-card-title">Active Layer</h3>
+                    <div id="layerStatus" class="layer-status">Loading SST layer...</div>
                 </div>
-
-
                 <div class="glass-card">
-
-                    <h3 class="map-card-title">
-                        Data Source
-                    </h3>
-
-                    <div class="layer-status">
-                        Copernicus Marine Service
-                    </div>
-
-                    <div
-                        id="datasetInfo"
-                        style="
-                            margin-top:7px;
-                            font-size:9px;
-                            color:#6f879f;
-                            line-height:1.5;
-                        "
-                    >
-                        Numerical ocean model data
-                    </div>
-
+                    <h3 class="map-card-title">Data Source</h3>
+                    <div class="layer-status">Copernicus Marine Service</div>
+                    <div id="datasetInfo" style="margin-top:5px; font-size:9px; color:#6f879f;">Numerical ocean model</div>
                 </div>
-
             </div>
 
-
-            <!-- Legend -->
-            <div
-                id="legend"
-                class="legend"
-            >
-
-                <div class="legend-title">
-                    Parameter intensity
-                </div>
-
+            <div id="legend" class="legend">
+                <div class="legend-title">Intensity</div>
                 <div class="legend-bar"></div>
-
-                <div class="legend-labels">
-                    <span>Low</span>
-                    <span>Medium</span>
-                    <span>High</span>
-                </div>
-
+                <div class="legend-labels"><span>Low</span><span>Med</span><span>High</span></div>
             </div>
 
-
-            <!-- Bottom map status -->
             <div class="bottom-bar">
+                <div class="status-pill">MODE: <strong id="modeText">LIVE</strong></div>
+                <div class="status-pill">LAT: <strong id="mapLat">17.6935</strong></div>
+                <div class="status-pill">LON: <strong id="mapLon">83.2921</strong></div>
+            </div>
+        </section>
 
-                <div class="status-pill">
-                    MODE:
-                    <strong id="modeText">
-                        LIVE
-                    </strong>
+        <!-- CHATBOT DRAWER (AI AGENT THINKING STREAM) -->
+        <aside id="chatDrawer" class="chat-drawer">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <h2>🤖 SAMUDRA AI Assistant</h2>
+                    <span class="chat-subtitle">LangGraph Multi-Agent Engine</span>
                 </div>
-
-                <div class="status-pill">
-                    LAT:
-                    <strong id="mapLat">
-                        17.6935
-                    </strong>
-                </div>
-
-                <div class="status-pill">
-                    LON:
-                    <strong id="mapLon">
-                        83.2921
-                    </strong>
-                </div>
-
+                <button class="close-chat-btn" onclick="toggleChatDrawer()">&times;</button>
             </div>
 
-        </section>
+            <div id="chatMessages" class="chat-messages">
+                <!-- Welcome Banner -->
+                <div class="chat-message assistant">
+                    <div class="message-bubble">
+                        👋 Welcome to <strong>SAMUDRA.AI Agentic Assistant</strong>!<br><br>
+                        Powered by <strong>LangGraph</strong>, our multi-agent architecture runs 17 specialized agents (Language, Intent, Planner, Copernicus Collectors, Risk Engine, and Domain Specialists) in parallel.<br><br>
+                        Ask any query below to watch the AI agents think and reason in real time!
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="chat-chips">
+                    <button class="chip-btn" onclick="sendQuickPrompt('Is it safe for small fishing boats off Visakhapatnam today?')">🚤 Safety Check</button>
+                    <button class="chip-btn" onclick="sendQuickPrompt('Analyze SST and ocean currents near Visakhapatnam')">🌊 SST & Currents</button>
+                    <button class="chip-btn" onclick="sendQuickPrompt('Check weather alerts, wind speed and wave height')">⛈️ Weather & Waves</button>
+                </div>
+                <div class="chat-input-box">
+                    <input id="chatInput" class="chat-input" type="text" placeholder="Ask SAMUDRA AI agents..." aria-label="Ask SAMUDRA AI agents" onkeydown="if(event.key==='Enter') sendChatMessage()" />
+                    <button id="sendBtn" class="send-btn" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        </aside>
 
     </main>
 
 
-    <!-- =========================================================
-         LOADING
-    ========================================================== -->
-
-    <div
-        id="loading"
-        class="loading"
-    >
-
-        <div class="loading-card">
-
-            <div class="spinner"></div>
-
-            <div
-                id="loadingText"
-                class="loading-text"
-            >
-                Loading marine data...
+    <!-- GRAPH MODAL -->
+    <div id="graphModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🌐 LangGraph Multi-Agent Architecture</h3>
+                <button class="close-chat-btn" onclick="closeGraphModal()">&times;</button>
             </div>
-
+            <div class="modal-body">
+                <p style="font-size: 11px; color: #94a3b8; margin-top: 0;">
+                    Below are the 17 compiled nodes in SAMUDRA.AI's StateGraph DAG execution pipeline:
+                </p>
+                <div id="graphGrid" class="graph-nodes-grid"></div>
+            </div>
         </div>
-
     </div>
 
 
-    <!-- =========================================================
-         LEAFLET JS
-    ========================================================== -->
+    <!-- LOADING OVERLAY -->
+    <div id="loading" class="loading">
+        <div class="loading-card">
+            <div class="spinner"></div>
+            <div id="loadingText" class="loading-text">Loading marine data...</div>
+        </div>
+    </div>
 
+
+    <!-- LEAFLET JS -->
     <script
         src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -995,989 +1166,369 @@
 
 
     <script>
-
         /* =========================================================
-           CONFIGURATION
+           CONFIGURATION & GLOBALS
         ========================================================= */
-
         const API = "http://127.0.0.1:8000";
-
         let activeParameter = "sst";
-
         let marineLayer = null;
-
         let pointMarker = null;
+        let activeThreadId = "session_" + Math.random().toString(36).substring(2, 9);
+        let compiledGraphNodes = [];
 
+        /* MAP INITIALIZATION */
+        const map = L.map("map", { zoomControl: true, preferCanvas: true }).setView([16.8, 82.8], 6);
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap contributors"
+        }).addTo(map);
 
-        /* =========================================================
-           MAP INITIALIZATION
-        ========================================================= */
-
-        const map = L.map("map", {
-            zoomControl: true,
-            preferCanvas: true
-        }).setView(
-            [16.8, 82.8],
-            6
-        );
-
-
-        const baseLayer = L.tileLayer(
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                maxZoom: 19,
-                attribution: "&copy; OpenStreetMap contributors"
-            }
-        );
-
-        baseLayer.addTo(map);
-
-
-        /* =========================================================
-           HELPERS
-        ========================================================= */
-
-        function showLoading(message) {
-
-            document.getElementById("loadingText").textContent =
-                message || "Loading marine data...";
-
-            document
-                .getElementById("loading")
-                .classList
-                .add("show");
+        /* UI HELPERS */
+        function showLoading(msg) {
+            document.getElementById("loadingText").textContent = msg || "Loading...";
+            document.getElementById("loading").classList.add("show");
         }
-
-
         function hideLoading() {
-
-            document
-                .getElementById("loading")
-                .classList
-                .remove("show");
+            document.getElementById("loading").classList.remove("show");
         }
-
-
-        function setSystemStatus(
-            message,
-            healthy = true
-        ) {
-
-            document.getElementById(
-                "systemStatus"
-            ).textContent = message;
-
-            const dot =
-                document.getElementById("statusDot");
-
-            dot.classList.toggle(
-                "error",
-                !healthy
-            );
-
-            document.getElementById(
-                "apiStatus"
-            ).textContent =
-                healthy
-                    ? "ONLINE"
-                    : "OFFLINE";
+        function setSystemStatus(msg, healthy = true) {
+            document.getElementById("systemStatus").textContent = msg;
+            document.getElementById("statusDot").classList.toggle("error", !healthy);
+            document.getElementById("apiStatus").textContent = healthy ? "ONLINE" : "OFFLINE";
         }
-
-
-        function setBadge(
-            text,
-            type = "normal"
-        ) {
-
-            const badge =
-                document.getElementById("dataBadge");
-
-            badge.textContent = text;
-
-            badge.className = "badge";
-
-            if (type === "partial") {
-                badge.classList.add("partial");
-            }
-
-            if (type === "error") {
-                badge.classList.add("error");
-            }
+        function toggleChatDrawer() {
+            document.getElementById("chatDrawer").classList.toggle("closed");
         }
-
-
-        function safeNumber(
-            value,
-            digits = 2
-        ) {
-
-            if (
-                value === null ||
-                value === undefined ||
-                Number.isNaN(Number(value))
-            ) {
-                return "N/A";
-            }
-
-            return Number(value).toFixed(digits);
-        }
-
-
-        function parameterDisplayName(
-            parameter
-        ) {
-
-            const names = {
-                sst: "Sea Surface Temperature",
-                currents: "Ocean Currents",
-                waves: "Wave Height",
-                chlorophyll: "Chlorophyll"
-            };
-
-            return names[parameter] || parameter;
-        }
-
 
         /* =========================================================
-           API HEALTH
+           CHATBOT & AI AGENT THINKING STREAM
+        ========================================================= */
+
+        function sendQuickPrompt(text) {
+            document.getElementById("chatInput").value = text;
+            sendChatMessage();
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById("chatInput");
+            const query = input.value.trim();
+            if (!query) return;
+
+            input.value = "";
+            const sendBtn = document.getElementById("sendBtn");
+            sendBtn.disabled = true;
+
+            const lat = Number(document.getElementById("latitude").value) || 17.6935;
+            const lon = Number(document.getElementById("longitude").value) || 83.2921;
+
+            const messagesContainer = document.getElementById("chatMessages");
+
+            // 1. Add User Message
+            const userMsgDiv = document.createElement("div");
+            userMsgDiv.className = "chat-message user";
+            userMsgDiv.innerHTML = `<div class="message-bubble">${escapeHTML(query)}</div>`;
+            messagesContainer.appendChild(userMsgDiv);
+
+            // 2. Add Assistant Thinking Shell
+            const assistantMsgDiv = document.createElement("div");
+            assistantMsgDiv.className = "chat-message assistant";
+
+            const thinkingBoxId = "thinking_" + Date.now();
+            const responseTextId = "resp_" + Date.now();
+
+            assistantMsgDiv.innerHTML = `
+                <div class="message-bubble">
+                    <div id="${thinkingBoxId}" class="agent-thinking-box">
+                        <div class="agent-thinking-header">
+                            <span>🤖 LangGraph Agent Pipeline Thinking...</span>
+                            <span class="agent-thinking-status">
+                                <span class="status-dot" style="width:6px; height:6px;"></span> Processing
+                            </span>
+                        </div>
+                        <div class="agent-step-list"></div>
+                    </div>
+                    <div id="${responseTextId}" class="assistant-response-content"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(assistantMsgDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            const thinkingBox = document.getElementById(thinkingBoxId);
+            const stepList = thinkingBox.querySelector(".agent-step-list");
+            const responseContentDiv = document.getElementById(responseTextId);
+
+            // 3. Connect to SSE Stream
+            const streamUrl = `${API}/chat/stream?query=${encodeURIComponent(query)}&thread_id=${encodeURIComponent(activeThreadId)}&latitude=${lat}&longitude=${lon}`;
+
+            try {
+                const eventSource = new EventSource(streamUrl);
+
+                eventSource.addEventListener("agent_step", (e) => {
+                    const data = JSON.parse(e.data);
+
+                    // Highlight node in graph modal if open
+                    highlightActiveNode(data.node);
+
+                    // Add step item to thinking accordion
+                    const stepDiv = document.createElement("div");
+                    stepDiv.className = "agent-step-item active";
+                    const stepDetailsId = "det_" + Math.random().toString(36).substring(2, 7);
+
+                    stepDiv.innerHTML = `
+                        <div class="agent-step-header">
+                            <div class="agent-step-title">
+                                <span>${data.icon}</span>
+                                <span>${escapeHTML(data.label)}</span>
+                            </div>
+                            <span style="font-size:9px; color:#34d399;">COMPLETE</span>
+                        </div>
+                        <div class="agent-step-thought">${escapeHTML(data.thought)}</div>
+                        <span class="agent-step-details-toggle" onclick="toggleDetails('${stepDetailsId}')">View State Output ▼</span>
+                        <div id="${stepDetailsId}" class="agent-step-details">${escapeHTML(JSON.stringify(data.summary, null, 2))}</div>
+                    `;
+
+                    stepList.appendChild(stepDiv);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                });
+
+                eventSource.addEventListener("done", (e) => {
+                    eventSource.close();
+                    sendBtn.disabled = false;
+
+                    const data = JSON.parse(e.data);
+
+                    // Update header of thinking box to complete
+                    thinkingBox.querySelector(".agent-thinking-header").innerHTML = `
+                        <span>✅ Multi-Agent Execution Complete</span>
+                        <span style="font-size:9.5px; color:#94a3b8;">${data.node_trace.length} Nodes Fired</span>
+                    `;
+
+                    // Render badges
+                    let badgesHtml = `<div class="response-badges">`;
+                    if (data.risk_level) {
+                        const rClass = "badge-risk-" + data.risk_level.replace(" ", "_");
+                        badgesHtml += `<span class="badge-pill ${rClass}">RISK: ${data.risk_level} (${data.risk_score}/100)</span>`;
+                    }
+                    if (data.intent) {
+                        badgesHtml += `<span class="badge-pill badge-intent">INTENT: ${data.intent.toUpperCase()}</span>`;
+                    }
+                    if (data.confidence_score) {
+                        badgesHtml += `<span class="badge-pill badge-intent">CONFIDENCE: ${Math.round(data.confidence_score * 100)}%</span>`;
+                    }
+                    badgesHtml += `</div>`;
+
+                    // Format Markdown response
+                    const formattedResponse = formatMarkdown(data.response);
+                    responseContentDiv.innerHTML = badgesHtml + formattedResponse;
+
+                    // If location resolved in response, option to jump map
+                    if (data.location && data.location.latitude && data.location.longitude) {
+                        const locBtn = document.createElement("button");
+                        locBtn.className = "secondary-btn";
+                        locBtn.style.marginTop = "10px";
+                        locBtn.style.fontSize = "11px";
+                        locBtn.innerHTML = `📍 Pan Map to ${escapeHTML(data.location.name || "Resolved Coordinates")}`;
+                        locBtn.onclick = () => {
+                            map.setView([data.location.latitude, data.location.longitude], 9);
+                            document.getElementById("latitude").value = data.location.latitude;
+                            document.getElementById("longitude").value = data.location.longitude;
+                            loadPointData();
+                        };
+                        responseContentDiv.appendChild(locBtn);
+                    }
+
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                });
+
+                eventSource.addEventListener("error", (e) => {
+                    eventSource.close();
+                    sendBtn.disabled = false;
+                    responseContentDiv.innerHTML = `<div style="color:#f87171; font-size:11px;">Error connecting to agent execution stream.</div>`;
+                });
+
+            } catch (err) {
+                console.error("Chat error:", err);
+                sendBtn.disabled = false;
+                responseContentDiv.innerHTML = `<div style="color:#f87171; font-size:11px;">Execution error: ${escapeHTML(err.message)}</div>`;
+            }
+        }
+
+        function toggleDetails(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle("show");
+        }
+
+        function formatMarkdown(text) {
+            if (!text) return "";
+            return text
+                .replace(/^### (.*$)/gim, '<h3 style="font-size:13px; color:#38bdf8; margin:10px 0 6px;">$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2 style="font-size:14px; color:#38bdf8; margin:12px 0 8px;">$1</h2>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^- (.*$)/gim, '<li style="margin-left:14px; margin-bottom:3px;">$1</li>')
+                .replace(/\n/g, '<br>');
+        }
+
+        /* =========================================================
+           GRAPH MODAL & PIPELINE VISUALIZER
+        ========================================================= */
+
+        async function openGraphModal() {
+            document.getElementById("graphModal").classList.add("show");
+            if (compiledGraphNodes.length === 0) {
+                try {
+                    const resp = await fetch(`${API}/graph/schema`);
+                    const data = await resp.json();
+                    compiledGraphNodes = data.nodes || [];
+                    renderGraphGrid(compiledGraphNodes);
+                } catch (e) {
+                    console.error("Graph schema fetch error:", e);
+                }
+            }
+        }
+
+        function closeGraphModal() {
+            document.getElementById("graphModal").classList.remove("show");
+        }
+
+        function renderGraphGrid(nodes) {
+            const grid = document.getElementById("graphGrid");
+            grid.innerHTML = "";
+            nodes.forEach(node => {
+                if (node.startsWith("__")) return;
+                const card = document.createElement("div");
+                card.id = "gnode_" + node;
+                card.className = "graph-node-card";
+                card.innerHTML = `
+                    <div class="graph-node-title">${escapeHTML(node.replace(/_/g, ' '))}</div>
+                    <div class="graph-node-type">LangGraph Node</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function highlightActiveNode(nodeName) {
+            document.querySelectorAll(".graph-node-card").forEach(c => c.classList.remove("active-node"));
+            const card = document.getElementById("gnode_" + nodeName);
+            if (card) card.classList.add("active-node");
+        }
+
+        /* =========================================================
+           COPERNICUS MAP & POINT DATA HANDLERS
         ========================================================= */
 
         async function checkAPI() {
-
             try {
-
-                const response =
-                    await fetch(
-                        `${API}/health`,
-                        {
-                            method: "GET"
-                        }
-                    );
-
-                if (!response.ok) {
-                    throw new Error(
-                        `HTTP ${response.status}`
-                    );
-                }
-
-                const data =
-                    await response.json();
-
-                setSystemStatus(
-                    "Marine Gateway online",
-                    true
-                );
-
-                return data;
-
+                const response = await fetch(`${API}/health`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                setSystemStatus("Marine Gateway & LangGraph Online", true);
             } catch (error) {
-
-                console.error(
-                    "API health error:",
-                    error
-                );
-
-                setSystemStatus(
-                    "Marine Gateway unavailable",
-                    false
-                );
-
-                return null;
+                setSystemStatus("Marine Gateway Offline", false);
             }
         }
 
-
-        /* =========================================================
-           PARAMETER SELECTION
-        ========================================================= */
-
-        async function selectParameter(
-            parameter
-        ) {
-
+        async function selectParameter(parameter) {
             activeParameter = parameter;
-
-            document
-                .querySelectorAll(
-                    ".parameter-btn"
-                )
-                .forEach(button => {
-
-                    button.classList.toggle(
-                        "active",
-                        button.dataset.parameter ===
-                            parameter
-                    );
-
-                });
-
-
-            document.getElementById(
-                "activeParameter"
-            ).textContent =
-                parameterDisplayName(
-                    parameter
-                );
-
-
-            document.getElementById(
-                "layerStatus"
-            ).textContent =
-                `Loading ${parameterDisplayName(parameter)} layer...`;
-
-
-            document.getElementById(
-                "dataContent"
-            ).innerHTML =
-                `
-                    <div class="empty-state">
-                        Loading marine information...
-                    </div>
-                `;
-
-
-            await loadMarineLayer(
-                parameter
-            );
+            document.querySelectorAll(".parameter-btn").forEach(btn => {
+                btn.classList.toggle("active", btn.dataset.parameter === parameter);
+            });
+            document.getElementById("layerStatus").textContent = `Loading ${parameter.toUpperCase()} layer...`;
+            await loadMarineLayer(parameter);
         }
 
-
-        /* =========================================================
-           GET MAP CONFIG
-        ========================================================= */
-
-        async function loadMarineConfig(
-            parameter
-        ) {
-
-            const response =
-                await fetch(
-                    `${API}/marine/map/config/${encodeURIComponent(parameter)}`
-                );
-
-            if (!response.ok) {
-
-                const text =
-                    await response.text();
-
-                throw new Error(
-                    `Config request failed: HTTP ${response.status} ${text}`
-                );
-            }
-
-            return await response.json();
-        }
-
-
-        /* =========================================================
-           LOAD MARINE WMTS LAYER
-        ========================================================= */
-
-        async function loadMarineLayer(
-            parameter
-        ) {
-
+        async function loadMarineLayer(parameter) {
             try {
+                showLoading(`Loading ${parameter.toUpperCase()} map...`);
+                const response = await fetch(`${API}/marine/map/config/${encodeURIComponent(parameter)}`);
+                if (!response.ok) throw new Error(`Config failed: HTTP ${response.status}`);
+                const config = await response.json();
 
-                showLoading(
-                    `Loading ${parameterDisplayName(parameter)} map...`
-                );
+                if (marineLayer !== null) map.removeLayer(marineLayer);
 
+                marineLayer = L.tileLayer(config.tile_url, {
+                    opacity: 0.72, tileSize: 256, maxZoom: 18, minZoom: 2, crossOrigin: true,
+                    attribution: "Copernicus Marine Service"
+                });
+                marineLayer.addTo(map);
 
-                const config =
-                    await loadMarineConfig(
-                        parameter
-                    );
-
-
-                console.log(
-                    "Marine layer config:",
-                    config
-                );
-
-
-                if (marineLayer !== null) {
-
-                    map.removeLayer(
-                        marineLayer
-                    );
-
-                    marineLayer = null;
-                }
-
-
-                if (
-                    !config ||
-                    !config.tile_url
-                ) {
-
-                    throw new Error(
-                        "Marine layer configuration does not contain tile_url."
-                    );
-                }
-
-
-                marineLayer =
-                    L.tileLayer(
-                        config.tile_url,
-                        {
-                            opacity:
-                                config.opacity ??
-                                0.72,
-
-                            tileSize:
-                                config.tile_size ??
-                                256,
-
-                            maxZoom : 18,
-
-                            minZoom : 2,
-
-                            crossOrigin:
-                                true,
-
-                            attribution:
-                                config.attribution ||
-                                "Copernicus Marine Service"
-                        }
-                    );
-
-
-                marineLayer.addTo(
-                    map
-                );
-
-
-                document.getElementById(
-                    "layerStatus"
-                ).textContent =
-                    config.title ||
-                    parameterDisplayName(
-                        parameter
-                    );
-
-
-                document.getElementById(
-                    "datasetInfo"
-                ).textContent =
-                    config.dataset_id ||
-                    "Copernicus Marine numerical data";
-
-
-                document
-                    .getElementById("legend")
-                    .style.display =
-                    "block";
-
-
-                setBadge(
-                    "LIVE",
-                    "normal"
-                );
-
-
-                console.log(
-                    "Marine layer loaded successfully."
-                );
-
+                document.getElementById("layerStatus").textContent = config.title || parameter.toUpperCase();
+                document.getElementById("legend").style.display = "block";
             } catch (error) {
-
-                console.error(
-                    "Marine layer error:",
-                    error
-                );
-
-
-                document.getElementById(
-                    "layerStatus"
-                ).textContent =
-                    "Marine layer unavailable";
-
-
-                document.getElementById(
-                    "dataContent"
-                ).innerHTML =
-                    `
-                        <div class="empty-state">
-                            The selected Copernicus map layer could not
-                            be loaded.<br><br>
-                            ${escapeHTML(error.message)}
-                        </div>
-                    `;
-
-
-                setBadge(
-                    "ERROR",
-                    "error"
-                );
-
+                console.error("Layer load error:", error);
+                document.getElementById("layerStatus").textContent = "Layer unavailable";
             } finally {
-
                 hideLoading();
             }
         }
-
-
-        /* =========================================================
-           POINT DATA
-        ========================================================= */
 
         async function loadPointData() {
+            const lat = Number(document.getElementById("latitude").value);
+            const lon = Number(document.getElementById("longitude").value);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
 
-            const latitude =
-                Number(
-                    document.getElementById(
-                        "latitude"
-                    ).value
-                );
+            document.getElementById("mapLat").textContent = lat.toFixed(4);
+            document.getElementById("mapLon").textContent = lon.toFixed(4);
+            map.setView([lat, lon], 8);
 
-            const longitude =
-                Number(
-                    document.getElementById(
-                        "longitude"
-                    ).value
-                );
-
-
-            if (
-                !Number.isFinite(latitude) ||
-                !Number.isFinite(longitude)
-            ) {
-
-                alert(
-                    "Please enter valid latitude and longitude."
-                );
-
-                return;
-            }
-
-
-            if (
-                latitude < -90 ||
-                latitude > 90 ||
-                longitude < -180 ||
-                longitude > 180
-            ) {
-
-                alert(
-                    "Latitude must be between -90 and 90 and longitude between -180 and 180."
-                );
-
-                return;
-            }
-
-
-            document.getElementById(
-                "mapLat"
-            ).textContent =
-                latitude.toFixed(4);
-
-            document.getElementById(
-                "mapLon"
-            ).textContent =
-                longitude.toFixed(4);
-
-
-            map.setView(
-                [
-                    latitude,
-                    longitude
-                ],
-                8
-            );
-
-
-            if (pointMarker !== null) {
-
-                map.removeLayer(
-                    pointMarker
-                );
-            }
-
-
-            pointMarker =
-                L.marker(
-                    [
-                        latitude,
-                        longitude
-                    ]
-                )
-                .addTo(map)
-                .bindPopup(
-                    `
-                    <strong>ORCA Analysis Point</strong><br>
-                    Latitude: ${latitude.toFixed(4)}<br>
-                    Longitude: ${longitude.toFixed(4)}
-                    `
-                );
-
-
-            pointMarker.openPopup();
-
+            if (pointMarker !== null) map.removeLayer(pointMarker);
+            pointMarker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>ORCA Point</b><br>${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
 
             try {
-
-                showLoading(
-                    "Retrieving Copernicus marine observations..."
-                );
-
-
-                const response =
-                    await fetch(
-                        `${API}/marine/point?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`
-                    );
-
-
-                if (!response.ok) {
-
-                    const text =
-                        await response.text();
-
-                    throw new Error(
-                        `HTTP ${response.status}: ${text}`
-                    );
-                }
-
-
-                const data =
-                    await response.json();
-
-
-                console.log(
-                    "Point data:",
-                    data
-                );
-
-
-                renderPointData(
-                    data
-                );
-
-
+                showLoading("Retrieving Copernicus observations...");
+                const response = await fetch(`${API}/marine/point?latitude=${lat}&longitude=${lon}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                renderPointData(data);
             } catch (error) {
-
-                console.error(
-                    "Point data error:",
-                    error
-                );
-
-
-                setBadge(
-                    "ERROR",
-                    "error"
-                );
-
-
-                document.getElementById(
-                    "dataContent"
-                ).innerHTML =
-                    `
-                    <div class="empty-state">
-                        Unable to retrieve marine observations.<br><br>
-                        ${escapeHTML(error.message)}
-                    </div>
-                    `;
-
+                console.error("Point error:", error);
             } finally {
-
                 hideLoading();
             }
         }
 
+        function renderPointData(data) {
+            const sst = data.sst || {};
+            const current = data.current || {};
+            const wave = data.wave || {};
 
-        /* =========================================================
-           RENDER POINT DATA
-        ========================================================= */
-
-        function renderPointData(
-            data
-        ) {
-
-            const sst =
-                data.sst || {};
-
-            const current =
-                data.current || {};
-
-            const wave =
-                data.wave || {};
-
-            const overallStatus =
-                data.status ||
-                data.overall_status ||
-                "OBSERVED";
-
-
-            const sstValue =
-                sst.value;
-
-            const currentSpeed =
-                current.speed;
-
-            const currentDirection =
-                current.direction;
-
-            const waveHeight =
-                wave.height;
-
-            const wavePeriod =
-                wave.period;
-
-            const waveDirection =
-                wave.direction;
-
-
-            let statusType =
-                "normal";
-
-
-            if (
-                String(overallStatus)
-                    .toUpperCase()
-                    .includes("PARTIAL")
-            ) {
-
-                statusType =
-                    "partial";
-            }
-
-
-            if (
-                String(overallStatus)
-                    .toUpperCase()
-                    .includes("NO_DATA")
-            ) {
-
-                statusType =
-                    "error";
-            }
-
-
-            setBadge(
-                String(overallStatus)
-                    .toUpperCase(),
-                statusType
-            );
-
-
-            document.getElementById(
-                "dataContent"
-            ).innerHTML =
-                `
-
+            document.getElementById("dataContent").innerHTML = `
                 <div class="metric">
-
-                    <div class="metric-label">
-                        Sea Surface Temperature
-                    </div>
-
-                    <div class="metric-value">
-                        ${
-                            safeNumber(
-                                sstValue,
-                                2
-                            )
-                        }
-                        <span
-                            style="
-                                font-size:11px;
-                                color:#7d94ad;
-                            "
-                        >
-                            °C
-                        </span>
-                    </div>
-
-                    <div class="metric-sub">
-                        ${
-                            sst.observation_time ||
-                            "Observation time unavailable"
-                        }
-                    </div>
-
+                    <div class="metric-label">Sea Surface Temp</div>
+                    <div class="metric-value">${sst.value ? Number(sst.value).toFixed(2) : "N/A"} <span style="font-size:11px;">°C</span></div>
                 </div>
-
-
                 <div class="metric">
-
-                    <div class="metric-label">
-                        Current Speed
-                    </div>
-
-                    <div class="metric-value">
-                        ${
-                            safeNumber(
-                                currentSpeed,
-                                3
-                            )
-                        }
-                        <span
-                            style="
-                                font-size:11px;
-                                color:#7d94ad;
-                            "
-                        >
-                            m/s
-                        </span>
-                    </div>
-
-                    <div class="metric-sub">
-                        Direction:
-                        ${
-                            safeNumber(
-                                currentDirection,
-                                1
-                            )
-                        }°
-                    </div>
-
+                    <div class="metric-label">Current Speed</div>
+                    <div class="metric-value">${current.speed ? Number(current.speed).toFixed(3) : "N/A"} <span style="font-size:11px;">m/s</span></div>
                 </div>
-
-
                 <div class="metric">
-
-                    <div class="metric-label">
-                        Significant Wave Height
-                    </div>
-
-                    <div class="metric-value">
-                        ${
-                            safeNumber(
-                                waveHeight,
-                                2
-                            )
-                        }
-                        <span
-                            style="
-                                font-size:11px;
-                                color:#7d94ad;
-                            "
-                        >
-                            m
-                        </span>
-                    </div>
-
-                    <div class="metric-sub">
-                        Period:
-                        ${
-                            safeNumber(
-                                wavePeriod,
-                                2
-                            )
-                        } s
-                        &nbsp; | &nbsp;
-                        Direction:
-                        ${
-                            safeNumber(
-                                waveDirection,
-                                1
-                            )
-                        }°
-                    </div>
-
+                    <div class="metric-label">Wave Height</div>
+                    <div class="metric-value">${wave.height ? Number(wave.height).toFixed(2) : "N/A"} <span style="font-size:11px;">m</span></div>
                 </div>
-
-                `;
+            `;
         }
 
-
-        /* =========================================================
-           VISAKHAPATNAM
-        ========================================================= */
-
         function goToVisakhapatnam() {
-
-            const lat = 17.6935526;
-            const lon = 83.2921297;
-
-
-            document.getElementById(
-                "latitude"
-            ).value =
-                lat;
-
-
-            document.getElementById(
-                "longitude"
-            ).value =
-                lon;
-
-
-            map.setView(
-                [
-                    lat,
-                    lon
-                ],
-                9
-            );
-
-
-            if (pointMarker !== null) {
-
-                map.removeLayer(
-                    pointMarker
-                );
-            }
-
-
-            pointMarker =
-                L.marker(
-                    [
-                        lat,
-                        lon
-                    ]
-                )
-                .addTo(map)
-                .bindPopup(
-                    `
-                    <strong>Visakhapatnam</strong><br>
-                    ORCA marine analysis point
-                    `
-                );
-
-
-            pointMarker.openPopup();
-
-
+            document.getElementById("latitude").value = 17.6935;
+            document.getElementById("longitude").value = 83.2921;
             loadPointData();
         }
 
-
-        /* =========================================================
-           HTML ESCAPING
-        ========================================================= */
-
-        function escapeHTML(
-            value
-        ) {
-
-            return String(value)
-                .replaceAll(
-                    "&",
-                    "&amp;"
-                )
-                .replaceAll(
-                    "<",
-                    "&lt;"
-                )
-                .replaceAll(
-                    ">",
-                    "&gt;"
-                )
-                .replaceAll(
-                    '"',
-                    "&quot;"
-                )
-                .replaceAll(
-                    "'",
-                    "&#039;"
-                );
+        function escapeHTML(str) {
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
 
+        map.on("click", (e) => {
+            document.getElementById("latitude").value = e.latlng.lat.toFixed(4);
+            document.getElementById("longitude").value = e.latlng.lng.toFixed(4);
+            loadPointData();
+        });
 
-        /* =========================================================
-           MAP CLICK
-        ========================================================= */
-
-        map.on(
-            "click",
-            function (event) {
-
-                const lat =
-                    event.latlng.lat;
-
-                const lon =
-                    event.latlng.lng;
-
-
-                document.getElementById(
-                    "latitude"
-                ).value =
-                    lat.toFixed(4);
-
-
-                document.getElementById(
-                    "longitude"
-                ).value =
-                    lon.toFixed(4);
-
-
-                document.getElementById(
-                    "mapLat"
-                ).textContent =
-                    lat.toFixed(4);
-
-
-                document.getElementById(
-                    "mapLon"
-                ).textContent =
-                    lon.toFixed(4);
-
-
-                if (pointMarker !== null) {
-
-                    map.removeLayer(
-                        pointMarker
-                    );
-                }
-
-
-                pointMarker =
-                    L.marker(
-                        [
-                            lat,
-                            lon
-                        ]
-                    )
-                    .addTo(map)
-                    .bindPopup(
-                        `
-                        <strong>ORCA Analysis Point</strong><br>
-                        ${lat.toFixed(4)}, ${lon.toFixed(4)}
-                        `
-                    );
-
-
-                pointMarker.openPopup();
-
-
-                loadPointData();
-            }
-        );
-
-
-        /* =========================================================
-           INITIALIZE
-        ========================================================= */
-
-        async function initialize() {
-
+        async function init() {
             await checkAPI();
-
-
-            try {
-
-                await loadMarineLayer(
-                    "sst"
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Initial layer load failed:",
-                    error
-                );
-            }
-
-
-            // Load Visakhapatnam observations
+            await loadMarineLayer("sst");
             await loadPointData();
         }
-
-
-        initialize();
-
+        init();
     </script>
-
 </body>
 </html>

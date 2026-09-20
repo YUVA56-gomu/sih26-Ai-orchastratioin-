@@ -4,6 +4,7 @@ from .planner import planner_node
 from .location import location_node
 from .data_ocean import ocean_data_node
 from .data_weather import weather_data_node
+from .data_marine import marine_data_node
 from .data_fishery import fishery_data_node
 from .data_geofence import geofence_data_node
 from .gate import anti_hallucination_gate_node
@@ -22,6 +23,7 @@ __all__ = [
     "location_node",
     "ocean_data_node",
     "weather_data_node",
+    "marine_data_node",
     "fishery_data_node",
     "geofence_data_node",
     "anti_hallucination_gate_node",

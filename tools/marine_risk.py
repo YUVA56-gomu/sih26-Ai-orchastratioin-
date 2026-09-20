@@ -23,6 +23,7 @@ def calculate_marine_risk(
     ocean: dict,
     weather: dict,
     geofence: dict,
+    marine: dict | None = None,
 ) -> dict:
 
     score = 0
@@ -62,6 +63,13 @@ def calculate_marine_risk(
             "significant_wave_height_m"
         )
     )
+
+    # ── Fallback: use Open-Meteo Marine wave_height if Copernicus unavailable ─
+    if wave_height is None and marine:
+        marine_current = marine.get("current", {})
+        wave_height = _number(
+            marine_current.get("wave_height")
+        )
 
     wind_speed = _number(
         weather_current.get(
@@ -224,6 +232,15 @@ def calculate_marine_risk(
 
             "precipitation_mm":
                 precipitation,
+
+            # From Open-Meteo Marine (MODELLED) — informational only
+            "ocean_current_velocity_kmh": _number(
+                (marine or {}).get("current", {}).get("ocean_current_velocity")
+            ),
+
+            "marine_sst_c": _number(
+                (marine or {}).get("current", {}).get("sea_surface_temperature")
+            ),
 
         },
 

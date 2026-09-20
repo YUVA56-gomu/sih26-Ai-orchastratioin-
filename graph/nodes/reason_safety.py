@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from state.schema import SamudraState
 from graph.llm import get_llm
+from graph.nodes.utils import extract_text
 from prompts import SAFETY_REASONER
 
 
@@ -50,7 +51,7 @@ def safety_reasoning_node(state: SamudraState) -> SamudraState:
         ]
         response = llm.invoke(messages)
         return {
-            "safety_reasoning": response.content.strip(),
+            "safety_reasoning": extract_text(response),
             "node_trace": ["safety_reasoner"],
         }
     except Exception as exc:

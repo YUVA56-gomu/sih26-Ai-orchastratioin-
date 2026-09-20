@@ -14,6 +14,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from state.schema import SamudraState
 from graph.llm import get_llm
+from graph.nodes.utils import extract_text
 from prompts import SYNTHESIZER
 
 
@@ -69,7 +70,7 @@ def synthesizer_node(state: SamudraState) -> SamudraState:
         ]
         response = llm.invoke(messages)
         return {
-            "final_response_english": response.content.strip(),
+            "final_response_english": extract_text(response),
             "node_trace": ["synthesizer"],
         }
     except Exception as exc:

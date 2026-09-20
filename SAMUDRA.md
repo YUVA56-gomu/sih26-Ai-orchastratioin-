@@ -131,16 +131,21 @@ http://localhost:8000/docs
                                        │  │  │  │
                           ─────────────┘  │  │  └─────────────
                          │                │  │                │
-               ┌─────────▼──────┐  ┌──────▼──┴───┐  ┌───────▼────────┐  ┌────────▼───────┐
-               │  ocean_data    │  │ weather_data │  │ fishery_data   │  │ geofence_data  │
-               │  Copernicus    │  │ Open-Meteo   │  │ PFZ heuristic  │  │ MPA / EEZ      │
-               │  SST/waves/    │  │ wind/rain/   │  │ INCOIS stub    │  │ boundary check │
-               │  currents      │  │ cyclone code │  │                │  │                │
-               └────────┬───────┘  └──────┬───────┘  └───────┬────────┘  └────────┬───────┘
-                        │                 │                   │                    │
-                        └────────┬────────┘                   └──────────┬─────────┘
-                                 │                                        │
-                                 └────────────────┬───────────────────────┘
+      ┌──────────▼─────┐ ┌──────▼──────┐ ┌───────▼──────┐ ┌───────▼────────┐ ┌──────▼────────┐
+      │  ocean_data    │ │weather_data │ │ marine_data  │ │ fishery_data   │ │geofence_data  │
+      │  Copernicus    │ │ Open-Meteo  │ │ Open-Meteo   │ │ PFZ heuristic  │ │ MPA / EEZ     │
+      │  SST/waves/    │ │ wind/rain/  │ │ Marine API   │ │ INCOIS stub    │ │ boundary check│
+      │  currents      │ │ cyclone code│ │ MODELLED     │ │                │ │               │
+      │  (observed)    │ │             │ │ waves/swell/ │ │                │ │               │
+      │                │ │             │ │ SST/currents │ │                │ │               │
+      │                │ │             │ │ sea_level_msl│ │                │ │               │
+      └────────┬───────┘ └──────┬──────┘ └───────┬──────┘ └───────┬────────┘ └──────┬───────┘
+               │                │                │                │                 │
+               └────────┬───────┘                └───────┬────────┘                 │
+                        │                                │                          │
+                        └──────────────────┬─────────────┘                          │
+                                           └────────────────────────────────────────┘
+                                                          │
                                                   │
                                    ┌──────────────▼──────────────┐
                                    │   anti_hallucination_gate   │
@@ -224,8 +229,9 @@ sih/
 │       ├── intent.py            ← classify query intent
 │       ├── planner.py           ← decompose query into execution plan
 │       ├── location.py          ← resolve place name → lat/lon
-│       ├── data_ocean.py        ← fetch Copernicus Marine data
-│       ├── data_weather.py      ← fetch Open-Meteo weather
+│       ├── data_ocean.py        ← fetch Copernicus Marine data (OBSERVED)
+│       ├── data_weather.py      ← fetch Open-Meteo atmosphere forecast
+│       ├── data_marine.py       ← fetch Open-Meteo Marine (MODELLED waves/swell/currents/SST/sea-level)
 │       ├── data_fishery.py      ← fetch PFZ heuristic data
 │       ├── data_geofence.py     ← check geofence / MPA / EEZ
 │       ├── gate.py              ← anti-hallucination gate
@@ -248,8 +254,9 @@ sih/
 │   └── models.py                ← Pydantic request/response models
 │
 └── tools/                       ← pure Python data fetchers (no LLM)
-    ├── copernicus_service.py    ← SST, waves, currents
-    ├── weather_service.py       ← Open-Meteo forecast
+    ├── copernicus_service.py    ← SST, waves, currents (Copernicus CMEMS)
+    ├── weather_service.py       ← Open-Meteo atmosphere forecast
+    ├── marine_service.py        ← Open-Meteo Marine API (MODELLED)
     ├── pfz_service.py           ← PFZ heuristic
     ├── geofence.py              ← zone boundary check
     ├── marine_risk.py           ← risk scoring rules
@@ -269,6 +276,7 @@ sih/
 | Autonomous planning & task decomposition | ✅ planner node |
 | Multiple specialized AI agents | ✅ 4 parallel reasoning agents |
 | Ocean data (SST, waves, currents) | ✅ Copernicus Marine |
+| Marine conditions (waves, swell, currents, SST, sea-level) | ✅ Open-Meteo Marine — MODELLED |
 | Weather / storm / cyclone data | ✅ Open-Meteo |
 | Fishery / PFZ information | ⚠️ Heuristic only (see gaps below) |
 | Geofence / boundary alerts | ⚠️ Demo zones (see gaps below) |
@@ -312,16 +320,18 @@ tools/geofence.py     ← replace demo zones with shapely + real GeoJSON
 ```
 
 ### 3. Tide Data (MEDIUM priority)
-**Current:** Not fetched at all.
-**What's needed:** Tide predictions for fishing safety and port operations.
-- **INCOIS Tidal Data API**: `https://incois.gov.in/portal/datainfo/tide.jsp`
-- **Open-Meteo Marine API** (`marine.open-meteo.com`) — already partially used in pfz_service,
-  also provides `ocean_current_velocity`, `wave_direction`, `sea_level` (tide proxy)
+**Current:** ✅ `sea_level_height_msl` now available via Open-Meteo Marine API
+(`tools/marine_service.py` → `state["marine_data"]`).
 
-```
-tools/tide_service.py       ← new node
-graph/nodes/data_tide.py    ← new data node
-```
+**Important caveat:** This is a **MODELLED** tidal value (combines tidal models,
+inverted barometer effect, and sea surface height anomalies referenced to global
+mean sea level — NOT lowest astronomical tide). It is explicitly labelled
+`data_type: MODELLED` in the response and carries a disclaimer. It must not be
+treated as authoritative tide-gauge data for coastal navigation.
+
+**Still needed for authoritative tides:**
+- **INCOIS Tidal Data API**: `https://incois.gov.in/portal/datainfo/tide.jsp`
+  — provides actual tide-gauge predictions and observations
 
 ### 4. Cyclone / Active Alert Feed (MEDIUM priority)
 **Current:** Weather codes from Open-Meteo catch heavy weather but no named alerts.

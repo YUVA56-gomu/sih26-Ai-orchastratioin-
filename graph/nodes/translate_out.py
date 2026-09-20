@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from state.schema import SamudraState
 from graph.llm import get_llm
+from graph.nodes.utils import extract_text
 
 _TRANSLATE_OUT_PROMPT = """
 You are a translation assistant for SAMUDRA.AI, a marine intelligence system.
@@ -73,7 +74,7 @@ def translate_out_node(state: SamudraState) -> SamudraState:
         ]
         response = llm.invoke(messages)
         return {
-            "final_response": response.content.strip(),
+            "final_response": extract_text(response),
             "node_trace": ["translate_out"],
         }
     except Exception as exc:
