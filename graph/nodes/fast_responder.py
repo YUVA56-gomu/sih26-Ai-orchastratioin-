@@ -131,10 +131,39 @@ def fast_responder_node(state: SamudraState) -> SamudraState:
     except Exception as exc:
         final_text = f"Hello! I am SAMUDRA.AI. How can I assist you with marine intelligence today?"
 
+    from tools.artifact_factory import (
+        create_location_card_artifact,
+        create_weather_card_artifact,
+        create_marine_conditions_artifact,
+    )
+
+    artifacts_list = []
+    if resolved_loc:
+        loc_card = create_location_card_artifact(resolved_loc)
+        if loc_card:
+            artifacts_list.append(loc_card)
+
+    if tool_evidence and isinstance(tool_evidence, dict) and "data" in tool_evidence:
+        source = tool_evidence.get("source", "")
+        data = tool_evidence["data"]
+        if "Weather" in source:
+            wx_card = create_weather_card_artifact(resolved_loc, data)
+            if wx_card:
+                artifacts_list.append(wx_card)
+        elif "Marine" in source:
+            marine_card = create_marine_conditions_artifact(resolved_loc, data)
+            if marine_card:
+                artifacts_list.append(marine_card)
+
+    if artifacts_list:
+        active_ctx["active_artifacts"] = artifacts_list
+        active_ctx["selected_artifact"] = artifacts_list[0]
+
     result: SamudraState = {
         "final_response_english": final_text,
         "route_path": "FAST",
         "active_context": active_ctx,
+        "artifacts": artifacts_list,
         "node_trace": ["fast_responder"],
     }
     if resolved_loc:

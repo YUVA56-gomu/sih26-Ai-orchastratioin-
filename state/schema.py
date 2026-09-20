@@ -28,6 +28,20 @@ class IntentType(str, Enum):
     GENERAL      = "general"       # Catch-all / multi-domain
 
 
+class ArtifactType(str, Enum):
+    MAP                = "map"
+    PFZ_MAP            = "pfz_map"
+    WEATHER_CARD       = "weather_card"
+    MARINE_CONDITIONS  = "marine_conditions"
+    RISK_SUMMARY       = "risk_summary"
+    ROUTE_MAP          = "route_map"
+    CHART              = "chart"
+    DATA_TABLE         = "data_table"
+    GEOFENCE_ALERT     = "geofence_alert"
+    ADVISORY           = "advisory"
+    LOCATION_CARD      = "location_card"
+
+
 class RiskLevel(str, Enum):
     LOW       = "LOW"
     MODERATE  = "MODERATE"
@@ -42,6 +56,8 @@ class ActiveContext(TypedDict, total=False):
     forecast_days: Optional[int]              # Last requested forecast days
     topic: Optional[str]                      # Active domain topic ("pfz", "weather", "ocean", "safety")
     selected_entity: Optional[dict[str, Any]] # Entity referenced in previous turn (e.g. PFZ candidates)
+    active_artifacts: Optional[list[dict[str, Any]]] # Persistent list of artifacts generated in conversation
+    selected_artifact: Optional[dict[str, Any]]      # Specific artifact active in current turn
 
 
 # ── Main state ────────────────────────────────────────────────────────────────
@@ -62,6 +78,10 @@ class SamudraState(TypedDict, total=False):
     ]
     active_context: ActiveContext     # Persistent active context across conversation turns
     route_path: str                  # Execution path taken: "FAST" | "DEEP"
+    artifacts: Annotated[
+        list[dict[str, Any]],
+        operator.add                 # Accumulate UI rendering artifacts generated during turn
+    ]
 
     # ── 2. Language layer ─────────────────────────────────────────────────────
     detected_language: str           # ISO 639-1 code e.g. "ta", "en", "hi"

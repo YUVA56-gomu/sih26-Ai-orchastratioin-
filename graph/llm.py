@@ -60,17 +60,21 @@ class FallbackMockLLM:
             user_q = query_match.group(1).strip() if query_match else prompt_text
             loc_match = re.search(r'\b(?:near|at|off|in|for|about|to|around)\b\s+([A-Za-z]+)', user_q, re.IGNORECASE)
             loc_text = loc_match.group(1).strip() if loc_match else ""
+            is_fish = "fish" in prompt_text.lower() or "pfz" in prompt_text.lower()
+            domains = ["ocean", "weather", "geofence"]
+            if is_fish:
+                domains.append("fishery")
             return json.dumps({
-                "intent": "safety" if "safe" in prompt_text.lower() else "general",
+                "intent": "fishery" if is_fish else ("safety" if "safe" in prompt_text.lower() else "general"),
                 "location_text": loc_text,
                 "coordinates_provided": False,
                 "latitude": None,
                 "longitude": None,
                 "time_request": "now",
                 "forecast_days": 1,
-                "domains_needed": ["ocean", "weather", "geofence"],
+                "domains_needed": domains,
                 "needs_safety": True,
-                "needs_fishery": "fish" in prompt_text.lower(),
+                "needs_fishery": is_fish,
                 "needs_navigation": "route" in prompt_text.lower()
             }, indent=2)
 

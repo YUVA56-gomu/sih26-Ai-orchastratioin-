@@ -36,10 +36,20 @@ class ChatRequest(BaseModel):
     )
 
 
+class Artifact(BaseModel):
+    id: str = Field(..., description="Unique artifact identifier e.g. pfz_map_14.81_74.12")
+    type: str = Field(..., description="Artifact category e.g. pfz_map, weather_card, risk_summary")
+    title: str = Field(..., description="Human-readable title")
+    description: Optional[str] = Field(default=None, description="Brief explanation or caption")
+    data: dict[str, Any] = Field(default_factory=dict, description="Structured rendering payload for frontend")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional context or timestamps")
+
+
 class ChatResponse(BaseModel):
     conversation_id: str = Field(..., description="Public conversation identifier")
     thread_id: str = Field(..., description="Internal LangGraph thread identifier")
     response: str = Field(..., description="Final synthesized response")
+    artifacts: list[Artifact] = Field(default_factory=list, description="UI rendering artifacts generated during turn")
     route_path: Optional[str] = Field(default="DEEP", description="Execution path: FAST or DEEP")
     detected_language: str = Field(default="en")
     intent: str = Field(default="general")

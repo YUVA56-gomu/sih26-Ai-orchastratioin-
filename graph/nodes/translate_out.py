@@ -35,6 +35,46 @@ def translate_out_node(state: SamudraState) -> SamudraState:
     response_english = state.get("final_response_english", "")
     lang = state.get("detected_language", "en")
 
+    from tools.artifact_factory import (
+        create_location_card_artifact,
+        create_pfz_map_artifact,
+        create_weather_card_artifact,
+        create_risk_summary_artifact,
+    )
+
+    existing_artifacts = list(state.get("artifacts") or [])
+    active_ctx = dict(state.get("active_context") or {})
+
+    if state.get("route_path") == "DEEP":
+        loc = state.get("location", {})
+        fish = state.get("fishery_data", {})
+        risk = state.get("risk_assessment", {})
+        wx = state.get("weather_data", {})
+
+        if fish and (fish.get("status") in ("OK", "Calculated", "HEURISTIC") or fish.get("candidates") or fish.get("pfz_candidates")):
+            pfz_art = create_pfz_map_artifact(loc, fish)
+            if pfz_art and not any(a.get("type") == "pfz_map" for a in existing_artifacts):
+                existing_artifacts.append(pfz_art)
+
+        if risk and risk.get("risk_level"):
+            risk_art = create_risk_summary_artifact(loc, risk)
+            if risk_art and not any(a.get("type") == "risk_summary" for a in existing_artifacts):
+                existing_artifacts.append(risk_art)
+
+        if wx and wx.get("current"):
+            wx_art = create_weather_card_artifact(loc, wx)
+            if wx_art and not any(a.get("type") == "weather_card" for a in existing_artifacts):
+                existing_artifacts.append(wx_art)
+
+        if loc.get("status") == "FOUND" and not existing_artifacts:
+            loc_art = create_location_card_artifact(loc)
+            if loc_art:
+                existing_artifacts.append(loc_art)
+
+    if existing_artifacts:
+        active_ctx["active_artifacts"] = existing_artifacts
+        active_ctx["selected_artifact"] = existing_artifacts[0]
+
     def _make_response_payload(final_resp: str, err: str | None = None) -> SamudraState:
         user_query = state.get("user_query", "")
         user_msg = {"role": "user", "content": user_query}
@@ -44,6 +84,8 @@ def translate_out_node(state: SamudraState) -> SamudraState:
             "final_response": final_resp,
             "messages": [user_msg, assistant_msg],
             "conversation_history": [user_msg, assistant_msg],
+            "artifacts": existing_artifacts,
+            "active_context": active_ctx,
             "node_trace": ["translate_out"],
         }
         if err:
