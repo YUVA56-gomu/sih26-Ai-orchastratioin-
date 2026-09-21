@@ -356,3 +356,52 @@ def create_geofence_alert_artifact(location: dict[str, Any], geofence_data: dict
             "provenance": geofence_data.get("provenance", {}),
         },
     )
+
+
+def create_route_map_artifact(location: dict[str, Any], route_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    """Build a deterministic marine route map UI artifact."""
+    if not isinstance(location, dict) or location.get("status") != "FOUND":
+        return None
+    if not isinstance(route_data, dict):
+        return None
+
+    origin = route_data.get("origin") or {}
+    dest = route_data.get("destination") or {}
+    status = route_data.get("status", "UNAVAILABLE")
+
+    o_name = origin.get("name", "Origin")
+    d_name = dest.get("name", "Destination")
+    dist_km = route_data.get("distance_km", 0.0)
+
+    if status == "OK":
+        title = f"Marine Route: {o_name} to {d_name}"
+        desc = f"Calculated Distance: {dist_km} km | Route nodes: {len(route_data.get('waypoints', []))}"
+    else:
+        title = f"Marine Route Request: {o_name} to {d_name}"
+        desc = "Route calculation unavailable or path blocked by spatial/environmental constraints."
+
+    return create_artifact(
+        artifact_type="route_map",
+        artifact_id=f"route_map_{origin.get('latitude')}_{origin.get('longitude')}_to_{dest.get('latitude')}_{dest.get('longitude')}",
+        title=title,
+        description=desc,
+        data={
+            "status": status,
+            "origin": origin,
+            "destination": dest,
+            "waypoints": route_data.get("waypoints", []),
+            "segments": route_data.get("segments", []),
+            "route_geometry": route_data.get("route_geometry", {"type": "LineString", "coordinates": []}),
+            "distance_km": dist_km,
+            "estimated_cost": route_data.get("estimated_cost", 0.0),
+            "environmental_summary": route_data.get("environmental_summary", {}),
+            "data_completeness": route_data.get("data_completeness", {}),
+            "verification": route_data.get("verification", {
+                "eez": "INFORMATIONAL",
+                "mpa": "UNAVAILABLE",
+                "naval": "UNAVAILABLE",
+            }),
+            "provenance": route_data.get("provenance", []),
+            "warnings": route_data.get("warnings", []),
+        },
+    )

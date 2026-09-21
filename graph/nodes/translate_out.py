@@ -44,6 +44,7 @@ def translate_out_node(state: SamudraState) -> SamudraState:
         create_tide_card_artifact,
         create_hazard_alert_artifact,
         create_geofence_alert_artifact,
+        create_route_map_artifact,
     )
 
     existing_artifacts = list(state.get("artifacts") or [])
@@ -58,6 +59,7 @@ def translate_out_node(state: SamudraState) -> SamudraState:
         tide_d = state.get("tide_data", {})
         hazard_d = state.get("hazard_data", {})
         geofence_d = state.get("geofence_data", {})
+        route_d = state.get("route_data", {})
 
         if fish and (fish.get("status") in ("OK", "Calculated", "HEURISTIC") or fish.get("candidates") or fish.get("pfz_candidates")):
             pfz_art = create_pfz_map_artifact(loc, fish)
@@ -93,6 +95,12 @@ def translate_out_node(state: SamudraState) -> SamudraState:
             geo_art = create_geofence_alert_artifact(loc, geofence_d)
             if geo_art and not any(a.get("type") == "geofence_alert" for a in existing_artifacts):
                 existing_artifacts.append(geo_art)
+
+        if route_d and route_d.get("status") in ("OK", "UNAVAILABLE"):
+            route_art = create_route_map_artifact(loc, route_d)
+            if route_art and not any(a.get("type") == "route_map" for a in existing_artifacts):
+                existing_artifacts.append(route_art)
+
 
 
         if loc.get("status") == "FOUND" and not existing_artifacts:

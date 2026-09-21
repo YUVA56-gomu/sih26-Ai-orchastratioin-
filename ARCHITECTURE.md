@@ -257,8 +257,38 @@ SAMUDRA AI responses deliver structured conversation artifacts alongside natural
 * `ocean_card` — SST, current vectors, wave dynamics
 * `risk_summary` — Deterministic risk score meter & warnings
 * `chart` — Time-series parameter trends (e.g. wave height over 72h)
-* `route_map` — Safe navigation route avoiding geofenced areas
+* `route_map` — Safe navigation route avoiding geofenced areas (Phase 2.6 deterministic A* LineString payload with edge cost breakdown, verification status, and disclaimers)
 * `data_table` — Expandable numerical evidence table
+
+---
+
+## 4.3 Marine Route Intelligence Architecture (Phase 2.6)
+
+```text
+                    Origin & Destination Coordinates
+                                  │
+                                  ▼
+                     Maritime Route Graph Attacher
+               (Nodes: 27 documented Indian port/passage waypoints)
+                                  │
+                                  ▼
+                        Deterministic A* Search
+                 (Heuristic: Haversine distance to dest)
+                                  │
+          ┌───────────────────────┼───────────────────────┐
+          ▼                       ▼                       ▼
+   Atmospheric Wind          Wave Dynamics            Ocean Currents
+(Speed, Dir, Gusts)      (Height, Period, Dir)    (Surface/Profile Speed)
+          │                       │                       │
+          └───────────────────────┼───────────────────────┘
+                                  ▼
+                   Inspectable Edge Cost Evaluator
+           Cost = dist_km × (1.0 + wind + wave + current + hazard + spatial)
+                                  │
+                                  ▼
+                         route_map Artifact
+```
+
 
 ---
 

@@ -60,7 +60,9 @@ from graph.nodes.data_marine import marine_data_node
 from graph.nodes.data_fishery import fishery_data_node
 from graph.nodes.data_geofence import geofence_data_node
 from graph.nodes.data_tide_hazard import tide_hazard_data_node
+from graph.nodes.data_route import fetch_route_data
 from graph.nodes.gate import anti_hallucination_gate_node
+
 from graph.nodes.reason_ocean import ocean_reasoning_node
 from graph.nodes.reason_weather import weather_reasoning_node
 from graph.nodes.reason_fishery import fishery_reasoning_node
@@ -164,6 +166,7 @@ def build_graph() -> StateGraph:
     g.add_node("fishery_data_collector",     fishery_data_node)
     g.add_node("geofence_data_collector",    geofence_data_node)
     g.add_node("tide_hazard_data_collector", tide_hazard_data_node)
+    g.add_node("route_data_collector",       fetch_route_data)
 
     # ── Gate ───────────────────────────────────────────────────────────────────
     g.add_node("anti_hallucination_gate",  anti_hallucination_gate_node)
@@ -209,6 +212,7 @@ def build_graph() -> StateGraph:
     g.add_edge("location_resolver",  "fishery_data_collector")
     g.add_edge("location_resolver",  "geofence_data_collector")
     g.add_edge("location_resolver",  "tide_hazard_data_collector")
+    g.add_edge("location_resolver",  "route_data_collector")
 
     # ── Fan-in: all collectors → gate ─────────────────────────────────────────
     g.add_edge("ocean_data_collector",       "anti_hallucination_gate")
@@ -217,6 +221,8 @@ def build_graph() -> StateGraph:
     g.add_edge("fishery_data_collector",     "anti_hallucination_gate")
     g.add_edge("geofence_data_collector",    "anti_hallucination_gate")
     g.add_edge("tide_hazard_data_collector", "anti_hallucination_gate")
+    g.add_edge("route_data_collector",       "anti_hallucination_gate")
+
 
     # ── Conditional edge: gate decision ───────────────────────────────────────
     g.add_conditional_edges(

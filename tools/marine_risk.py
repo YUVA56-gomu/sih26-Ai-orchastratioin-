@@ -411,16 +411,74 @@ def calculate_marine_risk(
             "marine_sst_c": _number(
                 (marine or {}).get("current", {}).get("sea_surface_temperature")
             ),
-
         },
 
         "decision_support_only":
             True,
 
-        "warning":
-            (
-                "This risk calculation is an ORCA "
-                "decision-support heuristic and does "
-                "not replace official marine warnings."
-            ),
+        "warning": (
+            "This risk calculation is an ORCA "
+            "decision-support heuristic and does "
+            "not replace official marine warnings."
+        ),
+    }
+
+
+def evaluate_route_risk(route_data: dict) -> dict:
+    """
+    Evaluate structured safety and risk factors for a calculated marine route.
+
+    Distinguishes algorithmic risk score from official maritime safety determination.
+    """
+    if not isinstance(route_data, dict) or route_data.get("status") != "OK":
+        return {
+            "overall_status": "UNAVAILABLE",
+            "risk_level": "UNKNOWN",
+            "algorithmic_risk_score": 0,
+            "environmental_exposure": "UNAVAILABLE",
+            "hazard_exposure": "UNAVAILABLE",
+            "boundary_verification": "UNAVAILABLE",
+            "data_completeness": route_data.get("data_completeness", {}) if isinstance(route_data, dict) else {},
+            "warnings": ["Route calculation unavailable or path blocked by spatial/environmental constraints."],
+            "decision_support_only": True,
+        }
+
+    segments = route_data.get("segments", [])
+    dist_km = route_data.get("distance_km", 0.0)
+    cost = route_data.get("estimated_cost", 0.0)
+
+    # Compute algorithmic risk score
+    cost_ratio = (cost / max(1.0, dist_km)) - 1.0
+    risk_score = min(100, max(5, int(15 + (cost_ratio * 40))))
+
+    reasons = []
+    env = route_data.get("environmental_summary", {})
+    w_speed = float(env.get("wind_speed_kmh") or 0.0)
+    w_height = float(env.get("wave_height_m") or 0.0)
+
+    if w_speed >= 35.0:
+        reasons.append(f"Elevated wind speed ({w_speed} km/h) along route")
+    if w_height >= 2.0:
+        reasons.append(f"Significant wave height ({w_height}m) along route segment")
+
+    if risk_score >= 65:
+        risk_level = "HIGH"
+    elif risk_score >= 40:
+        risk_level = "MODERATE"
+    else:
+        risk_level = "LOW"
+
+    return {
+        "overall_status": "CALCULATED",
+        "risk_level": risk_level,
+        "algorithmic_risk_score": risk_score,
+        "environmental_exposure": "MODERATE" if w_height >= 1.5 or w_speed >= 25 else "LOW",
+        "hazard_exposure": "ACTIVE_ADVISORY" if route_data.get("data_completeness", {}).get("hazard") == "AVAILABLE" else "NONE_REPORTED",
+        "boundary_verification": "INFORMATIONAL_EEZ_ONLY",
+        "reasons": reasons,
+        "data_completeness": route_data.get("data_completeness", {}),
+        "verification": route_data.get("verification", {}),
+        "warnings": route_data.get("warnings", []),
+        "decision_support_only": True,
+        "disclaimer": "Algorithmic route risk score is a decision-support heuristic, not an official maritime safety determination.",
     }

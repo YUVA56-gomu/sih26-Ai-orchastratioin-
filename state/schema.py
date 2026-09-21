@@ -121,6 +121,8 @@ class SamudraState(TypedDict, total=False):
     fishery_data:  dict[str, Any]    # PFZ heuristic / INCOIS
     tide_data:     dict[str, Any]    # Phase 2.4 Tide dynamics
     hazard_data:   dict[str, Any]    # Phase 2.4 Official hazard alert feed
+    route_data:    dict[str, Any]    # Phase 2.6 Marine route intelligence
+
 
     # ── 6. Anti-hallucination gate ────────────────────────────────────────────
     confidence_score: float          # 0.0 – 1.0
