@@ -12,10 +12,11 @@ from __future__ import annotations
 
 from state.schema import SamudraState
 from tools.marine_risk import calculate_marine_risk
+from tools.evidence_service import aggregate_evidence
 
 
 def risk_assessment_node(state: SamudraState) -> SamudraState:
-    """Calculate deterministic marine risk score."""
+    """Calculate deterministic marine risk score and aggregate evidence completeness."""
 
     ocean    = state.get("ocean_data", {})
     weather  = state.get("weather_data", {})
@@ -23,6 +24,9 @@ def risk_assessment_node(state: SamudraState) -> SamudraState:
     marine   = state.get("marine_data", {})   # optional — may be None/empty
     tide     = state.get("tide_data", {})
     hazard   = state.get("hazard_data", {})
+
+    evidence_records = list(state.get("evidence") or [])
+    ev_summary = aggregate_evidence(evidence_records)
 
     try:
         result = calculate_marine_risk(
@@ -35,6 +39,7 @@ def risk_assessment_node(state: SamudraState) -> SamudraState:
         )
         return {
             "risk_assessment": result,
+            "evidence_summary": ev_summary,
             "node_trace": ["risk_assessment"],
         }
     except Exception as exc:
@@ -46,6 +51,7 @@ def risk_assessment_node(state: SamudraState) -> SamudraState:
                 "evaluated_parameters": {},
                 "decision_support_only": True,
             },
+            "evidence_summary": ev_summary,
             "errors": [f"risk_node: {exc}"],
             "node_trace": ["risk_assessment"],
         }

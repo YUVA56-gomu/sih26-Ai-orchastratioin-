@@ -22,7 +22,7 @@ This document outlines the phased roadmap for building the target SAMUDRA AI pla
 4. **Tide Dynamics**: Incorporate tide level forecast models (*Completed in Phase 2.4*).
 5. **Hazard Alerts**: Integrate active weather advisories & warnings (*Completed in Phase 2.4*).
 6. **Geospatial Boundaries**: Replace demo circle geofencing with pure Python GIS spatial engine, EEZ boundary layers, proximity buffer math, and 3-tier provenance tracking (*Completed in Phase 2.5*).
-7. **Evidence Layer**: Implement explicit dataset metadata, observation timestamps, confidence scoring, and data provenance tracking.
+7. **Evidence Layer**: Implement explicit dataset metadata, observation timestamps, confidence scoring, and data provenance tracking (*Completed in Phase 2.7*).
 8. **Deterministic Risk Engine**: Refine risk assessment scoring algorithms against vessel type and environmental constraints.
 9. **Marine Route Intelligence**: Implement weather- and wave-aware spatial route calculation with boundary avoidance (*Completed in Phase 2.6*).
 

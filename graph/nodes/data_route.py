@@ -14,6 +14,13 @@ import re
 from typing import Any, Dict
 from state.schema import SamudraState
 from tools.route_service import get_route_service
+from tools.evidence_service import (
+    create_evidence_record,
+    AuthorityClass,
+    DataClass,
+    EvidenceStatus,
+    SourceType,
+)
 
 
 # Standard route destination fallbacks for common origin locations
@@ -52,12 +59,22 @@ def fetch_route_data(state: SamudraState) -> Dict[str, Any]:
     """
     LangGraph node gathering route calculation evidence.
 
-    Returns dictionary updating state["route_data"] and state["node_trace"].
+    Returns dictionary updating state["route_data"], state["evidence"], and state["node_trace"].
     """
     location = state.get("location") or {}
     status = location.get("status")
 
     if status != "FOUND" or location.get("latitude") is None:
+        ev = create_evidence_record(
+            source_id="route_astar_engine",
+            provider="SAMUDRA.AI Marine Route Intelligence Engine",
+            dataset="Deterministic A* Maritime Transit Graph & Cost Optimizer",
+            source_type=SourceType.DYNAMIC_GRAPH,
+            authority_class=AuthorityClass.MODELLED,
+            data_class=DataClass.MODELLED,
+            status=EvidenceStatus.UNAVAILABLE,
+            limitations=["Origin location context unavailable or unverified"],
+        )
         return {
             "route_data": {
                 "status": "UNAVAILABLE",
@@ -68,6 +85,7 @@ def fetch_route_data(state: SamudraState) -> Dict[str, Any]:
                     "naval": "UNAVAILABLE",
                 },
             },
+            "evidence": [ev],
             "node_trace": ["data_route"],
         }
 
@@ -137,7 +155,24 @@ def fetch_route_data(state: SamudraState) -> Dict[str, Any]:
         env_context=env_context,
     )
 
+    is_ok = isinstance(result, dict) and result.get("status") == "OK"
+    ev = create_evidence_record(
+        source_id="route_astar_engine",
+        provider="SAMUDRA.AI Marine Route Intelligence Engine",
+        dataset="27-Waypoint Indian Maritime Transit Graph & A* Cost Engine",
+        source_type=SourceType.DYNAMIC_GRAPH,
+        authority_class=AuthorityClass.MODELLED,
+        data_class=DataClass.MODELLED,
+        status=EvidenceStatus.AVAILABLE if is_ok else EvidenceStatus.UNAVAILABLE,
+        retrieved_at=result.get("calculated_at") if isinstance(result, dict) else None,
+        attribution="SAMUDRA.AI Spatial Engine",
+        license_type="Internal Application Heuristic",
+        limitations=["AI-assisted route decision support; NOT an official nautical chart or legal maritime clearance"],
+        query_metadata={"origin": origin_name, "destination": dest_name},
+    )
+
     return {
         "route_data": result,
+        "evidence": [ev],
         "node_trace": ["data_route"],
     }

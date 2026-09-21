@@ -123,6 +123,13 @@ class SamudraState(TypedDict, total=False):
     hazard_data:   dict[str, Any]    # Phase 2.4 Official hazard alert feed
     route_data:    dict[str, Any]    # Phase 2.6 Marine route intelligence
 
+    # ── Phase 2.7 Evidence & Provenance Collection ───────────────────────────
+    evidence: Annotated[
+        list[dict[str, Any]],
+        operator.add                 # Safely merge evidence records from parallel data collectors
+    ]
+    evidence_summary: dict[str, Any] # Aggregated evidence completeness report
+
 
     # ── 6. Anti-hallucination gate ────────────────────────────────────────────
     confidence_score: float          # 0.0 – 1.0
