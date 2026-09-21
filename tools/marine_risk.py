@@ -319,18 +319,25 @@ def calculate_marine_risk(
                     reasons.append(f"Official severe marine warning active: {title}")
 
     # ---------------------------------------------------------
-    # GEOFENCE
+    # GEOFENCE / GEOSPATIAL BOUNDARIES (Phase 2.5)
     # ---------------------------------------------------------
+    if geofence and isinstance(geofence, dict):
+        inside_restricted = geofence.get("inside_restricted_zone", False)
+        proximity_warn = geofence.get("proximity_warning", False)
+        matched_zones = geofence.get("matched_zones") or geofence.get("matches") or []
 
-    if geofence.get(
-        "inside_restricted_zone"
-    ):
+        if inside_restricted:
+            score += 50
+            has_mpa = any(isinstance(z, dict) and z.get("category") == "MPA" for z in matched_zones)
+            if has_mpa:
+                reasons.append("Location intersects a designated Marine Protected Area (MPA).")
+            else:
+                reasons.append("Location intersects a configured restricted zone.")
+        elif proximity_warn:
+            score += 15
+            reasons.append("Location is within boundary proximity buffer (< 10 km from boundary).")
 
-        score += 50
 
-        reasons.append(
-            "Location intersects a configured restricted zone."
-        )
 
     score = min(
         score,

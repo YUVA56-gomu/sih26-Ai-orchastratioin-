@@ -309,3 +309,50 @@ def create_hazard_alert_artifact(location: dict[str, Any], hazard_data: dict[str
             "provenance": hazard_data.get("provenance", {}),
         },
     )
+
+
+def create_geofence_alert_artifact(location: dict[str, Any], geofence_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    """Build a geofence / spatial boundary alert card artifact."""
+    if not isinstance(location, dict) or location.get("status") != "FOUND":
+        return None
+    if not isinstance(geofence_data, dict):
+        return None
+
+    inside = geofence_data.get("inside_restricted_zone", False)
+    proximity = geofence_data.get("proximity_warning", False)
+
+    if not inside and not proximity:
+        return None
+
+    lat = location.get("latitude")
+    lon = location.get("longitude")
+    name = location.get("name", "Selected Region")
+    matches = geofence_data.get("matched_zones") or geofence_data.get("matches") or []
+
+    if inside:
+        first_match = matches[0] if matches and isinstance(matches[0], dict) else {}
+        z_name = first_match.get("name") or first_match.get("zone_name") or "Restricted Zone"
+        title = f"Geofence Alert: Intersected {z_name}"
+        desc = f"Coordinates ({lat}°N, {lon}°E) fall inside designated polygon: {z_name}."
+    else:
+        title = f"Boundary Proximity Warning — {name}"
+        nearest = geofence_data.get("nearest_boundary") or {}
+        dist = nearest.get("distance_km", "N/A")
+        z_name = nearest.get("zone_name", "Spatial Boundary")
+        desc = f"Location is within boundary proximity buffer ({dist} km from {z_name})."
+
+    return create_artifact(
+        artifact_type="geofence_alert",
+        artifact_id=f"geofence_alert_{lat}_{lon}",
+        title=title,
+        description=desc,
+        data={
+            "location": {"name": name, "latitude": lat, "longitude": lon},
+            "inside_restricted_zone": inside,
+            "proximity_warning": proximity,
+            "matched_zones": matches,
+            "nearest_boundary": geofence_data.get("nearest_boundary", {}),
+            "layers": geofence_data.get("layers", []),
+            "provenance": geofence_data.get("provenance", {}),
+        },
+    )

@@ -1,0 +1,99 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "layer_id": "eez_india",
+    "layer_name": "Indian Exclusive Economic Zone (EEZ)",
+    "category": "EEZ",
+    "status": "AVAILABLE",
+    "data_class": "INFORMATIONAL_GIS",
+    "authority_class": "RESEARCH_INSTITUTION",
+    "provider": "Flanders Marine Institute (VLIZ)",
+    "dataset_name": "Maritime Boundaries Geodatabase (World EEZ)",
+    "dataset_version": "v12",
+    "retrieved_at": "2026-09-21T00:00:00Z",
+    "license": "Creative Commons Attribution 4.0 International (CC-BY 4.0)",
+    "source_url": "https://www.marineregions.org/",
+    "citation": "Flanders Marine Institute (2023). Maritime Boundaries Geodatabase: Maritime Boundaries and Exclusive Economic Zones (200NM), version 12. Available online at https://www.marineregions.org/."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "eez_in_mainland",
+      "properties": {
+        "name": "Indian Exclusive Economic Zone (Mainland)",
+        "sovereign": "India",
+        "territory": "Mainland India",
+        "boundary_type": "200 NM EEZ",
+        "category": "EEZ"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [68.0, 23.5],
+            [65.0, 20.0],
+            [66.0, 15.0],
+            [68.0, 11.0],
+            [71.0, 7.0],
+            [77.0, 4.5],
+            [82.0, 5.0],
+            [86.0, 10.0],
+            [89.5, 15.0],
+            [90.0, 20.0],
+            [89.0, 22.0],
+            [88.0, 22.5],
+            [78.0, 22.5],
+            [70.0, 23.5],
+            [68.0, 23.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "eez_in_lakshadweep",
+      "properties": {
+        "name": "Lakshadweep Islands EEZ",
+        "sovereign": "India",
+        "territory": "Lakshadweep",
+        "boundary_type": "200 NM EEZ",
+        "category": "EEZ"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [70.0, 13.0],
+            [75.0, 13.0],
+            [75.0, 7.5],
+            [70.0, 7.5],
+            [70.0, 13.0]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "eez_in_andaman",
+      "properties": {
+        "name": "Andaman and Nicobar Islands EEZ",
+        "sovereign": "India",
+        "territory": "Andaman and Nicobar Islands",
+        "boundary_type": "200 NM EEZ",
+        "category": "EEZ"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [90.5, 15.0],
+            [95.5, 15.0],
+            [96.0, 5.5],
+            [90.5, 5.5],
+            [90.5, 15.0]
+          ]
+        ]
+      }
+    }
+  ]
+}

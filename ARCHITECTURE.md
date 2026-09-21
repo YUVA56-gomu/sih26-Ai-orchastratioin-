@@ -195,6 +195,18 @@ SAMUDRA AI implements tide forecast dynamics and official hazard alert processin
 * **Tide & Hazard Risk Scoring**: `calculate_marine_risk()` adds deterministic risk penalties for high-tide wave superposition ($\ge 2.0$ m wave during high tide $\rightarrow +15$ pts), extreme tidal range ($\ge 2.5$ m $\rightarrow +10$ pts), and active official warnings ($+20$ to $+50$ pts).
 * **`tide_card` & `hazard_alert` Artifacts**: `create_tide_card_artifact()` and `create_hazard_alert_artifact()` export structured UI payloads representing tidal extrema, phase, and official warning status.
 
+### 3.7 Geospatial Boundaries & Spatial Engine Architecture (Phase 2.5)
+
+SAMUDRA AI implements a pure Python deterministic GIS spatial engine (`tools/gis_service.py`) for geospatial boundary analysis:
+
+* **Deterministic Ray-Casting & Spatial Math**: `point_in_polygon()` and `point_in_multipolygon()` compute exact point-in-polygon containment using raycasting over GeoJSON Polygon rings and holes.
+* **Haversine Boundary Distance**: `distance_to_geometry_boundary_km()` and `distance_to_segment_km()` calculate minimum great-circle boundary distance in kilometers, triggering `proximity_warning = True` for coordinates within buffer distance (< 10 km).
+* **Bounding Box Pre-Filtering**: `bounding_box_contains()` accelerates spatial lookups by filtering out non-intersecting feature bounding boxes before polygon raycasting.
+* **3-Tier Provenance Model**: Enforces standardized metadata across all layers (`status`: `AVAILABLE`/`UNAVAILABLE`, `data_class`: `INFORMATIONAL_GIS`/`AUTHORITATIVE_GIS`/`UNAVAILABLE`, `authority_class`: `RESEARCH_INSTITUTION`/`OFFICIAL_GOVERNMENT`/`OFFICIAL_GOVERNMENT_REQUIRED`).
+* **Military / Defense Zone Fallback**: Defense restricted zones return `status: "UNAVAILABLE"` (`authority_class: "OFFICIAL_GOVERNMENT_REQUIRED"`) without fabricating fake military polygons or coordinates.
+* **`geofence_alert` Artifact**: `create_geofence_alert_artifact()` emits structured UI payloads bundling matched zones, boundary distances, category layers, and provenance details.
+
+
 ---
 
 ## 4. ARTIFACT PROTOCOL

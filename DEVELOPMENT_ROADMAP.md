@@ -17,14 +17,15 @@ This document outlines the phased roadmap for building the target SAMUDRA AI pla
 
 ## PHASE 2 — MARINE INTELLIGENCE ENHANCEMENT
 1. **Weather Service Integration**: Enhance Open-Meteo atmospheric forecast coverage.
-2. **Ocean Hydrodynamics**: Expand Copernicus Marine datasets (temperature, salinity, current velocity, wave spectrum).
-3. **PFZ Bulletins**: Connect official INCOIS / MOSDAC Potential Fishing Zone bulletins alongside SST/chlorophyll heuristics.
-4. **Tide Dynamics**: Incorporate authoritative tide level forecast models and gauge data.
-5. **Hazard Alerts**: Integrate active weather advisories, cyclone warnings, and lightning detection feeds.
-6. **Geospatial Boundaries**: Replace demo circle geofencing with authoritative EEZ, MPA, and naval restriction GIS polygons.
+2. **Ocean Hydrodynamics**: Expand Copernicus Marine datasets (*Completed in Phase 2.2*).
+3. **PFZ Bulletins**: Connect official INCOIS / MOSDAC Potential Fishing Zone bulletins alongside SST/chlorophyll heuristics (*Completed in Phase 2.3*).
+4. **Tide Dynamics**: Incorporate tide level forecast models (*Completed in Phase 2.4*).
+5. **Hazard Alerts**: Integrate active weather advisories & warnings (*Completed in Phase 2.4*).
+6. **Geospatial Boundaries**: Replace demo circle geofencing with pure Python GIS spatial engine, EEZ boundary layers, proximity buffer math, and 3-tier provenance tracking (*Completed in Phase 2.5*).
 7. **Evidence Layer**: Implement explicit dataset metadata, observation timestamps, confidence scoring, and data provenance tracking.
 8. **Deterministic Risk Engine**: Refine risk assessment scoring algorithms against vessel type and environmental constraints.
 9. **Marine Route Intelligence**: Implement weather- and wave-aware spatial route calculation with boundary avoidance.
+
 
 ---
 
