@@ -67,6 +67,7 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     service: str = "SAMUDRA.AI"
     version: str = "1.0.0-langgraph"
+    llm: Optional[dict[str, Any]] = None
 
 
 class ConversationSummary(BaseModel):
@@ -82,3 +83,8 @@ class ConversationDetail(ConversationSummary):
     active_context: Optional[dict[str, Any]] = Field(default=None, description="Active context state")
     context_summary: Optional[str] = Field(default=None, description="Rolling conversation summary")
     artifacts: list[dict[str, Any]] = Field(default_factory=list, description="Associated UI artifacts")
+
+
+class RenameConversationRequest(BaseModel):
+    title: str = Field(..., description="New title for the conversation")
+

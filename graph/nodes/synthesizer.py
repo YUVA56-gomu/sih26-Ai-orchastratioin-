@@ -36,15 +36,18 @@ def _build_synthesis_context(state: SamudraState) -> str:
     geofence  = state.get("geofence_data", {})
     errors    = state.get("errors", [])
 
-    from graph.nodes.utils import format_recent_history
+    from graph.nodes.utils import format_recent_history, format_active_context
 
     hist_text = format_recent_history(state)
+    ctx_text = format_active_context(state)
 
     parts = [
         f"USER QUERY: {query}",
         f"INTENT: {plan.get('intent', 'general')}",
         f"LOCATION: {json.dumps(loc)}",
     ]
+    if ctx_text:
+        parts.append(ctx_text)
     if hist_text:
         parts.append(hist_text)
 

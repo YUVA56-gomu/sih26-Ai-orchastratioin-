@@ -22,4 +22,9 @@ __pycache__/
 Thumbs.db
 
 # Databases
-*.db
+*.db
+
+# Frontend Node dependencies & build output
+web/node_modules/
+web/dist/
+package-lock.json

@@ -13,11 +13,36 @@ from state.schema import SamudraState
 from tools.location import resolve_location
 
 
+_COASTAL_ALIASES = {
+    "vishakapatanam": "Visakhapatnam",
+    "vishakapatnam": "Visakhapatnam",
+    "visakhapatanam": "Visakhapatnam",
+    "vizag": "Visakhapatnam",
+    "pondicherry": "Puducherry",
+    "pondy": "Puducherry",
+    "trivandrum": "Thiruvananthapuram",
+    "cochin": "Kochi",
+    "calicut": "Kozhikode",
+    "madras": "Chennai",
+    "mangalore": "Mangaluru",
+}
+
+
 def location_node(state: SamudraState) -> SamudraState:
     """Resolve location name → coordinates."""
 
     plan = state.get("plan", {})
     active_ctx = dict(state.get("active_context") or {})
+
+    default_loc = {
+        "status": "FOUND",
+        "name": "Visakhapatnam offshore",
+        "country": "India",
+        "latitude": 17.68,
+        "longitude": 83.21,
+        "source": "Default Coastal Fallback",
+        "is_default": True,
+    }
 
     # Helper to return location + updated active_context
     def _make_result(loc_dict: dict) -> SamudraState:
@@ -55,36 +80,28 @@ def location_node(state: SamudraState) -> SamudraState:
         existing_loc = active_ctx.get("location")
         if isinstance(existing_loc, dict) and existing_loc.get("status") == "FOUND":
             return _make_result(existing_loc)
+        return _make_result(default_loc)
 
-    if not location_text:
-        return {
-            "location": {
-                "status": "NOT_PROVIDED",
-                "reason": "No location found in query or active context.",
-            },
-            "errors": ["location_node: no location text in plan or active context"],
-            "node_trace": ["location_resolver"],
-        }
+    # Normalize coastal aliases / typos
+    cleaned_text = location_text.lower().strip()
+    normalized_loc = _COASTAL_ALIASES.get(cleaned_text, location_text)
 
     try:
-        result = resolve_location(location_text)
+        result = resolve_location(normalized_loc)
         if result.get("status") != "FOUND":
-            # If geocoding failed on location_text (e.g. "there"), try active_context fallback
+            # Try original if normalized failed
+            if normalized_loc != location_text:
+                result = resolve_location(location_text)
+        if result.get("status") != "FOUND":
+            # If geocoding failed on location_text, try active_context fallback or default
             existing_loc = active_ctx.get("location")
             if isinstance(existing_loc, dict) and existing_loc.get("status") == "FOUND":
                 return _make_result(existing_loc)
+            return _make_result(default_loc)
         return _make_result(result)
 
     except Exception as exc:
         existing_loc = active_ctx.get("location")
         if isinstance(existing_loc, dict) and existing_loc.get("status") == "FOUND":
             return _make_result(existing_loc)
-        return {
-            "location": {
-                "status": "ERROR",
-                "place": location_text,
-                "error": str(exc),
-            },
-            "errors": [f"location_node: {exc}"],
-            "node_trace": ["location_resolver"],
-        }
+        return _make_result(default_loc)

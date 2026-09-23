@@ -29,8 +29,10 @@ from api.models import (
     HealthResponse,
     ConversationSummary,
     ConversationDetail,
+    RenameConversationRequest,
 )
 from graph.graph import get_compiled_graph
+from graph.llm import LLMProviderManager
 from storage.conversation_store import ConversationStore
 
 conversation_store = ConversationStore()
@@ -66,7 +68,13 @@ app.add_middleware(
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    return HealthResponse()
+    return HealthResponse(llm=LLMProviderManager().get_provider_status())
+
+
+@app.get("/health/llm")
+async def health_llm():
+    """Detailed LLM provider circuit breaker health status."""
+    return LLMProviderManager().get_provider_status()
 
 
 # ── MARINE GATEWAY ENDPOINTS ─────────────────────────────────────────────────
@@ -353,9 +361,27 @@ async def chat(request: ChatRequest):
 
 
 @app.get("/conversations", response_model=list[ConversationSummary])
-async def list_conversations():
+async def list_conversations(q: Optional[str] = Query(None)):
     """List lightweight metadata for all persistent conversations."""
-    return conversation_store.list_conversations()
+    return conversation_store.list_conversations(query=q)
+
+
+@app.patch("/conversations/{conversation_id}", response_model=ConversationSummary)
+async def rename_conversation(conversation_id: str, request: RenameConversationRequest):
+    """Rename a conversation title."""
+    updated = conversation_store.rename_conversation(conversation_id, request.title)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return updated
+
+
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """Delete a conversation record and its checkpoints."""
+    success = conversation_store.delete_conversation(conversation_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return {"status": "success", "conversation_id": conversation_id}
 
 
 @app.get("/conversations/{conversation_id}", response_model=ConversationDetail)
@@ -591,8 +617,10 @@ async def graph_schema():
         return {"error": str(exc)}
 
 
+web_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "dist")
 web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web")
-if os.path.exists(web_dir):
-    app.mount("/", StaticFiles(directory=web_dir, html=True), name="web")
+target_dir = web_dist if os.path.exists(web_dist) else web_dir
+if os.path.exists(target_dir):
+    app.mount("/", StaticFiles(directory=target_dir, html=True), name="web")
 
 

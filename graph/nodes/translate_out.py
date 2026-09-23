@@ -61,27 +61,40 @@ def translate_out_node(state: SamudraState) -> SamudraState:
         geofence_d = state.get("geofence_data", {})
         route_d = state.get("route_data", {})
 
-        if fish and (fish.get("status") in ("OK", "Calculated", "HEURISTIC") or fish.get("candidates") or fish.get("pfz_candidates")):
+        plan = state.get("plan", {})
+        intent = str(state.get("intent", plan.get("intent", "general"))).lower()
+        domains = plan.get("domains_needed", [])
+        q_lower = (state.get("user_query") or "").lower()
+
+        # Check domain relevance
+        wants_fishery = "fishery" in intent or "fishery" in domains or plan.get("needs_fishery") or any(k in q_lower for k in ["fish", "pfz", "zone", "catch", "tuna"])
+        wants_weather = "weather" in intent or "weather" in domains or any(k in q_lower for k in ["weather", "wind", "rain", "storm", "forecast", "temp"])
+        wants_ocean = "ocean" in intent or "ocean" in domains or any(k in q_lower for k in ["ocean", "sst", "current", "salinity", "sea", "wave"])
+        wants_safety = "safety" in intent or plan.get("needs_safety") or any(k in q_lower for k in ["safe", "risk", "hazard", "can i go", "warning"])
+        wants_route = "navigation" in intent or plan.get("needs_navigation") or any(k in q_lower for k in ["route", "path", "navigate", "voyage"])
+        wants_tide = any(k in q_lower for k in ["tide", "tidal", "high tide", "low tide", "sea level"])
+
+        if wants_fishery and fish and (fish.get("status") in ("OK", "Calculated", "HEURISTIC") or fish.get("candidates") or fish.get("pfz_candidates")):
             pfz_art = create_pfz_map_artifact(loc, fish)
             if pfz_art and not any(a.get("type") == "pfz_map" for a in existing_artifacts):
                 existing_artifacts.append(pfz_art)
 
-        if risk and risk.get("risk_level"):
+        if wants_safety and risk and risk.get("risk_level"):
             risk_art = create_risk_summary_artifact(loc, risk)
             if risk_art and not any(a.get("type") == "risk_summary" for a in existing_artifacts):
                 existing_artifacts.append(risk_art)
 
-        if wx and wx.get("current"):
+        if wants_weather and wx and wx.get("current"):
             wx_art = create_weather_card_artifact(loc, wx)
             if wx_art and not any(a.get("type") == "weather_card" for a in existing_artifacts):
                 existing_artifacts.append(wx_art)
 
-        if oc and oc.get("observations"):
+        if wants_ocean and oc and (oc.get("observations") or oc.get("status") == "AVAILABLE"):
             oc_art = create_ocean_conditions_artifact(loc, oc)
             if oc_art and not any(a.get("type") == "ocean_card" for a in existing_artifacts):
                 existing_artifacts.append(oc_art)
 
-        if tide_d and tide_d.get("status") == "AVAILABLE":
+        if wants_tide and tide_d and tide_d.get("status") == "AVAILABLE":
             tide_art = create_tide_card_artifact(loc, tide_d)
             if tide_art and not any(a.get("type") == "tide_card" for a in existing_artifacts):
                 existing_artifacts.append(tide_art)
@@ -96,13 +109,12 @@ def translate_out_node(state: SamudraState) -> SamudraState:
             if geo_art and not any(a.get("type") == "geofence_alert" for a in existing_artifacts):
                 existing_artifacts.append(geo_art)
 
-        if route_d and route_d.get("status") in ("OK", "UNAVAILABLE"):
+        if wants_route and route_d and route_d.get("status") in ("OK", "UNAVAILABLE"):
             route_art = create_route_map_artifact(loc, route_d)
             if route_art and not any(a.get("type") == "route_map" for a in existing_artifacts):
                 existing_artifacts.append(route_art)
 
-
-
+        # General / default fallback if no specific artifact matched but location is resolved
         if loc.get("status") == "FOUND" and not existing_artifacts:
             loc_art = create_location_card_artifact(loc)
             if loc_art:

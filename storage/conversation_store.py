@@ -90,12 +90,19 @@ class ConversationStore:
                 (now, conversation_id),
             )
 
-    def list_conversations(self) -> list[dict[str, Any]]:
+    def list_conversations(self, query: Optional[str] = None) -> list[dict[str, Any]]:
         """Return lightweight metadata for all conversations sorted by updated_at descending."""
         with self._get_connection() as conn:
-            rows = conn.execute(
-                "SELECT conversation_id, thread_id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC"
-            ).fetchall()
+            if query and query.strip():
+                term = f"%{query.strip()}%"
+                rows = conn.execute(
+                    "SELECT conversation_id, thread_id, title, created_at, updated_at FROM conversations WHERE title LIKE ? ORDER BY updated_at DESC",
+                    (term,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT conversation_id, thread_id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC"
+                ).fetchall()
             return [dict(r) for r in rows]
 
     def get_conversation(self, conversation_id: str) -> Optional[dict[str, Any]]:
@@ -106,3 +113,35 @@ class ConversationStore:
                 (conversation_id,),
             ).fetchone()
             return dict(row) if row else None
+
+    def rename_conversation(self, conversation_id: str, new_title: str) -> Optional[dict[str, Any]]:
+        """Rename an existing conversation's title."""
+        title = generate_deterministic_title(new_title)
+        now = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            cur = conn.execute(
+                "UPDATE conversations SET title = ?, updated_at = ? WHERE conversation_id = ?",
+                (title, now, conversation_id),
+            )
+            if cur.rowcount == 0:
+                return None
+            return self.get_conversation(conversation_id)
+
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """Delete a conversation record and its associated checkpoint data."""
+        with self._get_connection() as conn:
+            cur = conn.execute(
+                "DELETE FROM conversations WHERE conversation_id = ?",
+                (conversation_id,),
+            )
+            deleted = cur.rowcount > 0
+
+            # Try deleting checkpoints if checkpoint tables exist
+            try:
+                conn.execute("DELETE FROM checkpoints WHERE thread_id = ?", (conversation_id,))
+                conn.execute("DELETE FROM checkpoint_blobs WHERE thread_id = ?", (conversation_id,))
+                conn.execute("DELETE FROM checkpoint_writes WHERE thread_id = ?", (conversation_id,))
+            except Exception:
+                pass
+
+            return deleted
