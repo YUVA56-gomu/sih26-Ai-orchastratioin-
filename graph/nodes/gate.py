@@ -59,17 +59,18 @@ def _summarise_evidence(state: SamudraState) -> str:
 def anti_hallucination_gate_node(state: SamudraState) -> SamudraState:
     """
     Cross-validate evidence. Set gate_decision to PASS / RECHECK / BLOCKED.
-    If recheck count exceeds _MAX_RECHECK, force PASS to avoid infinite loops.
+    If location is unresolved or recheck count >= 1, pass through to avoid unnecessary re-fetch loops.
     """
 
     recheck_count = state.get("recheck_count", 0)
+    loc = state.get("location", {})
 
-    # Hard cap: avoid infinite re-fetch loops
-    if recheck_count >= _MAX_RECHECK:
+    # Hard cap & missing location check: avoid unnecessary re-fetch loops
+    if recheck_count >= 1 or loc.get("status") != "FOUND":
         return {
             "gate_decision": "PASS",
-            "confidence_score": 0.5,
-            "gate_reasons": ["Max recheck limit reached; proceeding with available evidence."],
+            "confidence_score": 0.8,
+            "gate_reasons": ["Proceeding with available evidence."],
             "recheck_domains": [],
             "node_trace": ["anti_hallucination_gate"],
         }
@@ -97,13 +98,18 @@ def anti_hallucination_gate_node(state: SamudraState) -> SamudraState:
         if decision not in ("PASS", "RECHECK", "BLOCKED"):
             decision = "PASS"
 
+        # If recheck domains are empty or unneeded, force PASS
+        recheck_domains = data.get("recheck_domains", [])
+        if decision == "RECHECK" and not recheck_domains:
+            decision = "PASS"
+
         new_recheck_count = recheck_count + 1 if decision == "RECHECK" else recheck_count
 
         return {
             "gate_decision": decision,
-            "confidence_score": float(data.get("confidence_score", 0.7)),
+            "confidence_score": float(data.get("confidence_score", 0.8)),
             "gate_reasons": data.get("reasons", []),
-            "recheck_domains": data.get("recheck_domains", []),
+            "recheck_domains": recheck_domains,
             "recheck_count": new_recheck_count,
             "node_trace": ["anti_hallucination_gate"],
         }

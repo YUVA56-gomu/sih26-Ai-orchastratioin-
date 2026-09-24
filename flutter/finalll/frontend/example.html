@@ -1,0 +1,14 @@
+<!doctype html>
+<html><body>
+<h3>ORCA Frontend Test</h3>
+<input id="q" style="width:70%" value="What are the current sea conditions near Visakhapatnam?">
+<button onclick="send()">Ask</button>
+<pre id="out"></pre>
+<script>
+async function send(){
+  const q=document.getElementById("q").value;
+  const r=await fetch("http://127.0.0.1:8000/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:q,conversation_id:"browser-demo"})});
+  document.getElementById("out").textContent=JSON.stringify(await r.json(),null,2);
+}
+</script>
+</body></html>

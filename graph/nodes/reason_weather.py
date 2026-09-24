@@ -20,10 +20,13 @@ from prompts import WEATHER_REASONER
 def weather_reasoning_node(state: SamudraState) -> SamudraState:
     """Interpret weather evidence for the user's query."""
 
+    plan = state.get("plan", {})
+    domains = plan.get("domains_needed")
     weather = state.get("weather_data", {})
-    if weather.get("status") in ("SKIPPED", "BLOCKED"):
+
+    if (domains is not None and "weather" not in domains) or weather.get("status") in ("SKIPPED", "BLOCKED"):
         return {
-            "weather_reasoning": f"Weather data unavailable: {weather.get('reason', weather.get('status'))}",
+            "weather_reasoning": f"Weather reasoning skipped: {weather.get('reason', 'Domain not required')}",
             "node_trace": ["weather_reasoner"],
         }
 

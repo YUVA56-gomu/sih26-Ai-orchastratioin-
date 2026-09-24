@@ -162,123 +162,150 @@ def map_config(parameter: str):
 # ── AGENT STEP FORMATTER ──────────────────────────────────────────────────────
 
 _NODE_METADATA = {
-    "language_detection": ("🌐", "Language Detection Agent"),
-    "intent_router": ("🧭", "Intent Router Agent"),
-    "fast_responder": ("⚡", "Fast Response Agent"),
-    "planner": ("📋", "Decomposition Planner Agent"),
-    "location_resolver": ("📍", "Location Resolver Agent"),
-    "ocean_data_collector": ("🌊", "Copernicus Ocean Data Collector"),
-    "weather_data_collector": ("🌤️", "Open-Meteo Weather Collector"),
-    "marine_data_collector": ("⚓", "Marine Wave Dynamics Collector"),
-    "fishery_data_collector": ("🐟", "Fishery & PFZ Service"),
-    "geofence_data_collector": ("🛡️", "Geofence & MPA Guard"),
-    "anti_hallucination_gate": ("⚡", "Anti-Hallucination Safety Gate"),
-    "risk_assessment": ("🧮", "Deterministic Marine Risk Engine"),
-    "ocean_reasoner": ("🌊", "Ocean Specialist Agent"),
-    "weather_reasoner": ("🌤️", "Weather Specialist Agent"),
-    "fishery_reasoner": ("🐟", "Fishery Specialist Agent"),
-    "safety_reasoner": ("🛟", "Marine Safety Specialist Agent"),
-    "synthesizer": ("🤖", "Multi-Agent Synthesizer"),
-    "translate_out": ("🌐", "Translation & Output Agent"),
+    "language_detection": ("🌐", "Language Detection"),
+    "intent_router": ("🧭", "Intent Router"),
+    "fast_responder": ("⚡", "Fast Response"),
+    "planner": ("📋", "Planner"),
+    "location_resolver": ("📍", "Location Resolver"),
+    "ocean_data_collector": ("🌊", "Ocean Conditions"),
+    "weather_data_collector": ("🌤️", "Weather Forecast"),
+    "marine_data_collector": ("⚓", "Wave Dynamics"),
+    "fishery_data_collector": ("🐟", "Fishing Zones"),
+    "geofence_data_collector": ("🛡️", "Marine Boundaries"),
+    "anti_hallucination_gate": ("⚡", "Safety Gate"),
+    "risk_assessment": ("🧮", "Risk Engine"),
+    "ocean_reasoner": ("🌊", "Ocean Specialist"),
+    "weather_reasoner": ("🌤️", "Weather Specialist"),
+    "fishery_reasoner": ("🐟", "Fishery Specialist"),
+    "safety_reasoner": ("🛟", "Safety Specialist"),
+    "synthesizer": ("🤖", "Synthesizer"),
+    "translate_out": ("🌐", "Translation & Output"),
 }
 
 
 def build_node_thought(node_name: str, node_output: dict) -> tuple[str, str, str, dict]:
-    """Extract (icon, label, thought_text, summary_data) for a given node output."""
+    """Extract (icon, label, thought_text, summary_data) for a given node output using human-readable language."""
     icon, label = _NODE_METADATA.get(node_name, ("🤖", f"Agent ({node_name})"))
-    thought = "Agent completed execution step."
+    thought = "Completed execution step."
     summary_data = {}
 
     if node_name == "language_detection":
         lang = node_output.get("detected_language", "en")
-        thought = f"Detected query language: '{lang}'."
+        thought = f"Understanding query language ({lang.upper()})"
         summary_data = {"detected_language": lang}
 
     elif node_name == "intent_router":
         intent = node_output.get("intent", "general")
-        thought = f"Classified primary intent as: {str(intent).upper()}."
+        thought = f"Routing query intent: {str(intent).lower()}"
         summary_data = {"intent": intent}
 
     elif node_name == "fast_responder":
-        resp = node_output.get("final_response_english", "")
-        thought = "Executed simple query via Fast Path ⚡."
-        summary_data = {"response_snippet": resp[:150] + "..." if len(resp) > 150 else resp}
+        thought = "Direct conversational response prepared"
+        summary_data = {}
 
     elif node_name == "planner":
         plan = node_output.get("plan", {})
         domains = plan.get("domains_needed", [])
-        thought = f"Decomposed query into domain plan: {', '.join(domains)}."
+        thought = f"Planning domain analysis: {', '.join(domains)}" if domains else "Planning analysis steps"
         summary_data = plan
 
     elif node_name == "location_resolver":
         loc = node_output.get("location", {})
-        loc_str = loc.get("name") or f"{loc.get('latitude')}, {loc.get('longitude')}"
-        thought = f"Resolved target coordinates to: {loc_str} ({loc.get('latitude')}, {loc.get('longitude')})."
+        loc_str = loc.get("name") or (f"{loc.get('latitude')}, {loc.get('longitude')}" if loc.get("latitude") else "Target location resolved")
+        thought = f"Resolved target area: {loc_str}"
         summary_data = loc
 
     elif node_name == "ocean_data_collector":
         ocean = node_output.get("ocean_data", {})
         sst = ocean.get("sst", {}).get("value")
         current_spd = ocean.get("current", {}).get("speed")
-        thought = f"Fetched ocean data — SST: {sst if sst else 'N/A'}°C | Current Speed: {current_spd if current_spd else 'N/A'} m/s."
+        details = []
+        if sst is not None: details.append(f"SST {sst}°C")
+        if current_spd is not None: details.append(f"Currents {current_spd} m/s")
+        thought = f"Checking ocean conditions{(' (' + ', '.join(details) + ')') if details else ''}"
         summary_data = ocean
 
     elif node_name == "weather_data_collector":
         wx = node_output.get("weather_data", {})
         wind = wx.get("current", {}).get("wind_speed_10m")
         temp = wx.get("current", {}).get("temperature_2m")
-        thought = f"Fetched weather forecast — Temp: {temp if temp is not None else 'N/A'}°C | Wind: {wind if wind is not None else 'N/A'} km/h."
+        details = []
+        if temp is not None: details.append(f"{temp}°C")
+        if wind is not None: details.append(f"wind {wind} km/h")
+        thought = f"Checking weather forecast{(' (' + ', '.join(details) + ')') if details else ''}"
         summary_data = {"temperature": temp, "wind_speed": wind}
 
     elif node_name == "marine_data_collector":
         marine = node_output.get("marine_data", {})
         waves = marine.get("current", {}).get("wave_height")
-        thought = f"Fetched wave dynamics — Significant Wave Height: {waves if waves is not None else 'N/A'} m."
+        thought = f"Checking wave dynamics{f' (waves {waves} m)' if waves is not None else ''}"
         summary_data = marine
 
     elif node_name == "fishery_data_collector":
         fish = node_output.get("fishery_data", {})
-        pfz = fish.get("pfz_status", "Calculated")
-        thought = f"Evaluated Potential Fishing Zones (PFZ): Status = {pfz}."
+        thought = "Evaluating Potential Fishing Zones (PFZ)"
         summary_data = fish
 
     elif node_name == "geofence_data_collector":
         geo = node_output.get("geofence_data", {})
         restricted = geo.get("inside_restricted_zone", False)
-        thought = f"Spatial boundary check: Inside Restricted Marine Area = {restricted}."
+        thought = f"Checking restricted marine boundaries{ ' (inside boundary)' if restricted else ''}"
         summary_data = geo
 
     elif node_name == "anti_hallucination_gate":
         decision = node_output.get("gate_decision", "PASS")
-        conf = node_output.get("confidence_score", 1.0)
-        thought = f"Gate Verification: Decision = {decision} | Confidence Score = {conf*100:.0f}%."
-        summary_data = {"gate_decision": decision, "confidence_score": conf}
+        thought = "Checking data reliability"
+        summary_data = {"gate_decision": decision}
 
     elif node_name == "risk_assessment":
         risk = node_output.get("risk_assessment", {})
-        level = risk.get("risk_level", "UNKNOWN")
-        score = risk.get("risk_score", -1)
-        thought = f"Calculated Marine Safety Risk Level: {level} (Score: {score}/100)."
+        level = risk.get("risk_level", "NORMAL")
+        thought = f"Evaluating marine safety risk ({level})"
         summary_data = risk
 
     elif node_name in ("ocean_reasoner", "weather_reasoner", "fishery_reasoner", "safety_reasoner"):
-        key = f"{node_name.split('_')[0]}_reasoning"
-        reasoning = node_output.get(key, "")
-        snippet = reasoning.replace("\n", " ")[:120]
-        thought = f"Specialist Reasoning: {snippet}..."
-        summary_data = {key: reasoning}
+        domain_title = node_name.split("_")[0].capitalize()
+        thought = f"Analyzing {domain_title} intelligence"
+        summary_data = {}
 
     elif node_name == "synthesizer":
-        eng = node_output.get("final_response_english", "")
-        thought = "Synthesized multi-specialist evidence into unified marine intelligence report."
-        summary_data = {"final_response_english": eng[:200] + "..."}
+        thought = "Synthesizing multi-agent intelligence"
+        summary_data = {}
 
     elif node_name == "translate_out":
-        final_resp = node_output.get("final_response", "")
-        thought = "Finalized output generation and multi-lingual translation."
-        summary_data = {"final_response": final_resp[:200] + "..."}
+        thought = "Preparing your answer"
+        summary_data = {}
 
     return icon, label, thought, summary_data
+
+
+def format_node_trace(node_trace_raw: list, final_state: Optional[dict] = None) -> list[dict[str, Any]]:
+    """Format raw node_trace into structured execution step objects for frontend presentation."""
+    formatted = []
+    seen = set()
+    state_dict = final_state or {}
+    for idx, item in enumerate(node_trace_raw or []):
+        if isinstance(item, dict):
+            formatted.append(item)
+        elif isinstance(item, str):
+            clean_name = item.split("(")[0].strip()
+            if clean_name in seen and "recheck" not in item:
+                continue
+            seen.add(clean_name)
+            node_out = state_dict.get(clean_name) if isinstance(state_dict.get(clean_name), dict) else {}
+            icon, label, thought, summary = build_node_thought(clean_name, node_out)
+            formatted.append({
+                "id": f"{clean_name}_{idx}",
+                "node": clean_name,
+                "status": "completed",
+                "message": thought,
+                "thought": thought,
+                "icon": icon,
+                "label": label,
+                "summary": summary,
+                "path": state_dict.get("route_path", "DEEP"),
+            })
+    return formatted
 
 
 # ── CONVERSATIONAL CHAT ENDPOINTS ─────────────────────────────────────────────
@@ -478,6 +505,7 @@ async def _execute_chat_stream(
                     icon, label, thought, summary = build_node_thought(node_name, node_output)
 
                     node_payload = {
+                        "id": f"evt_{node_name}_{uuid.uuid4().hex[:6]}",
                         "node": node_name,
                         "status": "completed",
                         "message": thought,
@@ -488,7 +516,6 @@ async def _execute_chat_stream(
                         "path": route_path,
                     }
                     yield f"event: node\ndata: {json.dumps(node_payload)}\n\n"
-                    yield f"event: agent_step\ndata: {json.dumps(node_payload)}\n\n"
 
                     # Emit incremental artifacts if produced
                     artifacts = node_output.get("artifacts") or []
@@ -541,7 +568,7 @@ async def _execute_chat_stream(
             "risk_score": int(risk.get("risk_score")) if isinstance(risk, dict) and risk.get("risk_score") is not None else None,
             "confidence_score": float(final_state["confidence_score"]) if "confidence_score" in final_state else None,
             "gate_decision": final_state.get("gate_decision"),
-            "node_trace": final_state.get("node_trace", []),
+            "node_trace": format_node_trace(final_state.get("node_trace", []), final_state),
             "location": final_state.get("location"),
             "active_context": final_state.get("active_context"),
         }

@@ -17,7 +17,25 @@ export const AppLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
-  const [activeStreamStop, setActiveStreamStop] = useState<(() => void) | null>(null);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
+
+  // Request browser geolocation on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserCoords({
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+          });
+        },
+        (err) => {
+          console.log('Browser geolocation notice:', err.message);
+        },
+        { timeout: 10000 }
+      );
+    }
+  }, []);
 
   // Load conversations on mount
   useEffect(() => {
@@ -137,21 +155,29 @@ export const AppLayout: React.FC = () => {
     let accumContent = '';
     const artifactsList: Artifact[] = [];
 
-    const stopFn = startChatStream(text, activeConvId, undefined, undefined, {
+    const stopFn = startChatStream(
+      text,
+      activeConvId,
+      userCoords?.lat,
+      userCoords?.lon,
+      {
       onStart: (data) => {
         if (!activeConvId) {
           setActiveConvId(data.conversation_id);
         }
       },
       onAgentStep: (step) => {
-        stepsMap.push(step);
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMsgId
-              ? { ...msg, agentSteps: [...stepsMap] }
-              : msg
-          )
-        );
+        const stepKey = step.id || step.node || step.label;
+        if (!stepsMap.some((s) => (s.id || s.node || s.label) === stepKey)) {
+          stepsMap.push(step);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMsgId
+                ? { ...msg, agentSteps: [...stepsMap] }
+                : msg
+            )
+          );
+        }
       },
       onArtifact: (art) => {
         if (!artifactsList.some((a) => a.id === art.id)) {

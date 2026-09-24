@@ -20,12 +20,14 @@ from prompts import FISHERY_REASONER
 def fishery_reasoning_node(state: SamudraState) -> SamudraState:
     """Interpret fishery evidence for the user's query."""
 
+    plan = state.get("plan", {})
+    domains = plan.get("domains_needed")
     fishery = state.get("fishery_data", {})
     ocean = state.get("ocean_data", {})
 
-    if fishery.get("status") in ("SKIPPED", "BLOCKED") and ocean.get("status") in ("SKIPPED", "BLOCKED", None):
+    if (domains is not None and "fishery" not in domains) or (fishery.get("status") in ("SKIPPED", "BLOCKED") and ocean.get("status") in ("SKIPPED", "BLOCKED", None)):
         return {
-            "fishery_reasoning": "Fishery data unavailable. No PFZ or ocean evidence to interpret.",
+            "fishery_reasoning": "Fishery reasoning skipped: domain not required or data unavailable.",
             "node_trace": ["fishery_reasoner"],
         }
 

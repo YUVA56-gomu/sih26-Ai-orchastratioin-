@@ -115,7 +115,7 @@ def fast_responder_node(state: SamudraState) -> SamudraState:
         prompt_parts.append(ctx_text)
     prompt_parts.append(f"CURRENT QUERY: {query}")
 
-    if resolved_loc:
+    if resolved_loc and not resolved_loc.get("is_default"):
         prompt_parts.append(f"TARGET LOCATION: {resolved_loc.get('name')} (Lat: {resolved_loc.get('latitude')}, Lon: {resolved_loc.get('longitude')})")
     if tool_evidence:
         prompt_parts.append(f"FETCHED DATA EVIDENCE:\n{json.dumps(tool_evidence, indent=2)[:1000]}")

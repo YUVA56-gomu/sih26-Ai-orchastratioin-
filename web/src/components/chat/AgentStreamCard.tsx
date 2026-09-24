@@ -27,7 +27,7 @@ export const AgentStreamCard: React.FC<AgentStreamCardProps> = ({ steps, isCompl
   if (!steps || steps.length === 0) return null;
 
   const displaySteps = steps.filter(
-    (s) => s.label && s.label !== 'Fast Response Agent'
+    (s) => (s.label && s.label.trim()) || (s.node && s.node.trim())
   );
 
   if (displaySteps.length === 0) return null;

@@ -20,16 +20,18 @@ from prompts import OCEAN_REASONER
 def ocean_reasoning_node(state: SamudraState) -> SamudraState:
     """Interpret ocean evidence for the user's query."""
 
+    plan = state.get("plan", {})
+    domains = plan.get("domains_needed")
+
     ocean  = state.get("ocean_data", {})
     marine = state.get("marine_data", {})
 
-    # Skip only when BOTH sources are unavailable
-    ocean_blocked  = ocean.get("status") in ("SKIPPED", "BLOCKED")
+    ocean_blocked  = ocean.get("status") in ("SKIPPED", "BLOCKED", None)
     marine_blocked = marine.get("status") in ("SKIPPED", "BLOCKED", "ERROR", None)
 
-    if ocean_blocked and marine_blocked:
+    if (domains is not None and "ocean" not in domains) or (ocean_blocked and marine_blocked):
         return {
-            "ocean_reasoning": "Ocean data unavailable: both Copernicus and Open-Meteo Marine are blocked.",
+            "ocean_reasoning": "Ocean reasoning skipped: domain not required or data unavailable.",
             "node_trace": ["ocean_reasoner"],
         }
 

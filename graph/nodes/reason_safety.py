@@ -20,6 +20,17 @@ from prompts import SAFETY_REASONER
 def safety_reasoning_node(state: SamudraState) -> SamudraState:
     """Produce a marine safety assessment from all collected evidence."""
 
+    plan = state.get("plan", {})
+    needs_safety = plan.get("needs_safety", False)
+    intent = str(state.get("intent", "")).lower()
+    risk = state.get("risk_assessment", {})
+
+    if not needs_safety and "safety" not in intent and "navigation" not in intent and not risk.get("risk_level"):
+        return {
+            "safety_reasoning": "Safety reasoning skipped: safety assessment not required for this query.",
+            "node_trace": ["safety_reasoner"],
+        }
+
     query = state.get("query_in_english") or state.get("user_query", "")
 
     ocean   = state.get("ocean_data", {})

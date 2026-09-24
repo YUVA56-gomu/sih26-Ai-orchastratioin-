@@ -57,7 +57,7 @@ class ChatResponse(BaseModel):
     risk_score: Optional[int] = Field(default=None)
     confidence_score: Optional[float] = Field(default=None)
     gate_decision: Optional[str] = Field(default=None)
-    node_trace: list[str] = Field(default_factory=list)
+    node_trace: list[Any] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
     location: Optional[dict[str, Any]] = None
     active_context: Optional[dict[str, Any]] = None

@@ -79,14 +79,52 @@ def route_fast_or_deep(state: SamudraState) -> str:
     """
     Decide whether query executes via FAST ⚡ path or DEEP 🧠 path.
     Returns: "fast" | "deep"
-    Conservative default: "deep"
+    Default for non-marine / conversational queries: "fast" ⚡
     """
     raw_query = state.get("user_query", "")
     query = state.get("query_in_english") or raw_query
     lower_q = query.lower().strip().rstrip("?.!")
     intent = state.get("intent", IntentType.GENERAL)
 
-    # DEEP CRITERIA (Safety, Navigation, Risk, Multi-domain, Recommendations, Route, Complex Reasoning)
+    # 1. CONVERSATIONAL, META, & SYSTEM QUERIES (ALWAYS FAST ⚡)
+    meta_keywords = [
+        "slow", "why slow", "why are you", "who are you", "what can you do", "how can you help",
+        "what is samudra", "who created you", "who made you", "are you working", "how are you",
+        "can you help me", "tell me about yourself", "explain yourself", "explain your capabilities",
+        "what happened", "is it working", "how fast", "working fine", "about samudra",
+        "nice to meet you", "i am", "my name is", "good afternoon", "good morning", "good evening",
+        "who are", "what is your name", "are you ai", "what do you do", "nice meeting you"
+    ]
+    if any(kw in lower_q for kw in meta_keywords):
+        return "fast"
+
+    greetings = {"hi", "hello", "hey", "good morning", "good evening", "good day", "greetings", "namaste", "hola", "yo"}
+    chitchat = {"thanks", "thank you", "okay", "ok", "got it", "goodbye", "bye", "cool", "great", "awesome", "nice", "fine"}
+
+    if lower_q in greetings or lower_q in chitchat:
+        return "fast"
+    if any(lower_q.startswith(g) for g in ["hi ", "hello ", "hey ", "thanks ", "thank you ", "nice to meet"]):
+        return "fast"
+
+    # 2. CHECK IF QUERY IS EXPLICITLY MARINE / OCEAN / WEATHER / FISHERY / SAFETY RELATED
+    marine_domain_keywords = [
+        "ocean", "marine", "sea", "coastal", "coast", "water", "tide", "tides", "wave", "waves",
+        "current", "currents", "wind", "weather", "sst", "temperature", "temp", "depth", "bathymetry",
+        "fish", "fishing", "pfz", "catch", "chlorophyll", "salinity", "cyclone", "storm", "hazard",
+        "warning", "restriction", "geofence", "route", "navigate", "navigation", "voyage", "boat",
+        "vessel", "ship", "harbor", "port", "dock", "anchorage", "shore", "beach", "offshore",
+        "inshore", "bay", "gulf", "strait", "island", "incois", "copernicus", "visakhapatnam",
+        "vizag", "chennai", "mumbai", "kochi", "mangalore", "goa", "karwar", "kanyakumari",
+        "paradeep", "tuticorin", "porbandar", "veraval", "lat", "lon", "coordinates"
+    ]
+
+    is_marine_related = any(kw in lower_q for kw in marine_domain_keywords)
+
+    # Non-marine queries (general chat, introductions, general questions) ALWAYS use FAST path ⚡
+    if not is_marine_related:
+        return "fast"
+
+    # 3. DEEP CRITERIA FOR MARINE QUERIES
     if intent in (IntentType.SAFETY, IntentType.NAVIGATION):
         return "deep"
 
@@ -95,36 +133,26 @@ def route_fast_or_deep(state: SamudraState) -> str:
         "can i go", "can we go", "should i go", "is it safe", "able to fish",
         "route", "path", "navigate", "navigation", "avoid",
         "nearest pfz", "best zone", "which zone", "which spot", "recommend",
-        "why", "how does it affect", "compare", "decline", "cause"
+        "why is it unsafe", "why risk", "compare", "decline"
     ]
     if any(kw in lower_q for kw in safety_risk_keywords):
         return "deep"
 
     # Multi-condition temporal requests with action
     if any(t in lower_q for t in ["tomorrow", "next 3 days", "forecast"]):
-        if any(w in lower_q for w in ["go", "fish", "fishing", "sail", "voyage"]):
+        if any(w in lower_q for w in ["go", "fish", "fishing", "sail", "voyage", "route"]):
             return "deep"
 
-    # FAST CRITERIA
-    greetings = {"hi", "hello", "hey", "good morning", "good evening", "good day", "greetings", "namaste"}
-    identity = {"who are you", "what can you do", "how can you help", "what is samudra", "who made you"}
-    chitchat = {"thanks", "thank you", "okay", "ok", "got it", "goodbye", "bye", "cool", "great"}
-
-    if lower_q in greetings or lower_q in identity or lower_q in chitchat:
-        return "fast"
-    if any(lower_q.startswith(g) for g in ["hi ", "hello ", "hey ", "thanks"]):
-        return "fast"
-
-    # Simple definitions ("what is pfz", "what is sst", "what is wave height", "explain chlorophyll")
+    # 4. FAST DEFINITIONS & SINGLE-TOOL INQUIRIES
     if any(lower_q.startswith(prefix) for prefix in ["what is ", "what are ", "explain ", "tell me about ", "define "]):
-        return "fast"
+        if not any(kw in lower_q for kw in ["safe", "safety", "route", "best zone", "recommend"]):
+            return "fast"
 
-    # Simple single-tool inquiries ("what is the weather near karwar?", "what are the waves near karwar?", "what is the sst near karwar?")
     single_tool_keywords = ["weather", "wind", "waves", "wave", "sst", "temperature"]
     if any(kw in lower_q for kw in single_tool_keywords) and not any(kw in lower_q for kw in ["safe", "safety", "recommend", "best", "which", "should"]):
         return "fast"
 
-    # Conservative default
+    # Default for complex marine queries
     return "deep"
 
 
