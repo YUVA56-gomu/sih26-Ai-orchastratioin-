@@ -8,21 +8,28 @@ interface AgentStreamCardProps {
 }
 
 export const AgentStreamCard: React.FC<AgentStreamCardProps> = ({ steps, isComplete }) => {
-  const [isExpanded, setIsExpanded] = useState(!isComplete);
+  const hasFinishedStep = steps?.some((s) => ['translate_out', 'fast_responder', 'synthesizer'].includes(s.node || ''));
+  const effectiveComplete = isComplete || hasFinishedStep;
+
+  const [isExpanded, setIsExpanded] = useState(!effectiveComplete);
   const [startTime] = useState<number>(Date.now());
   const [duration, setDuration] = useState<number>(0);
+  const finalDurationRef = React.useRef<number | null>(null);
 
   useEffect(() => {
-    if (isComplete) {
+    if (effectiveComplete) {
+      if (finalDurationRef.current === null) {
+        finalDurationRef.current = Math.max(0.1, (Date.now() - startTime) / 1000);
+      }
+      setDuration(finalDurationRef.current);
       setIsExpanded(false);
-      setDuration((Date.now() - startTime) / 1000);
     } else {
       const interval = setInterval(() => {
         setDuration((Date.now() - startTime) / 1000);
-      }, 200);
+      }, 100);
       return () => clearInterval(interval);
     }
-  }, [isComplete, startTime]);
+  }, [effectiveComplete, startTime]);
 
   if (!steps || steps.length === 0) return null;
 
@@ -67,13 +74,13 @@ export const AgentStreamCard: React.FC<AgentStreamCardProps> = ({ steps, isCompl
         className="w-full px-3.5 py-2 flex items-center justify-between bg-ocean-950/60 hover:bg-ocean-850/80 transition-colors text-left"
       >
         <div className="flex items-center gap-2">
-          {isComplete ? (
+          {effectiveComplete ? (
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
           ) : (
             <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
           )}
           <span className="font-semibold text-slate-200 text-xs">
-            {isComplete ? `✦ Analyzed in ${duration.toFixed(1)}s` : `✦ SAMUDRA Analyzing (${duration.toFixed(1)}s)...`}
+            {effectiveComplete ? `✦ Analyzed in ${duration.toFixed(1)}s` : `✦ SAMUDRA Analyzing (${duration.toFixed(1)}s)...`}
           </span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-mono">
             {activeCategories.length} agent group{activeCategories.length !== 1 ? 's' : ''}

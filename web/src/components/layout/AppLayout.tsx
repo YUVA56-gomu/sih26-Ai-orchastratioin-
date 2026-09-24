@@ -18,6 +18,7 @@ export const AppLayout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [activeStreamStop, setActiveStreamStop] = useState<(() => void) | null>(null);
 
   // Request browser geolocation on mount
   useEffect(() => {

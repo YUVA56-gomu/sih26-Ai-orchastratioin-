@@ -106,7 +106,35 @@ def route_fast_or_deep(state: SamudraState) -> str:
     if any(lower_q.startswith(g) for g in ["hi ", "hello ", "hey ", "thanks ", "thank you ", "nice to meet"]):
         return "fast"
 
-    # 2. CHECK IF QUERY IS EXPLICITLY MARINE / OCEAN / WEATHER / FISHERY / SAFETY RELATED
+    # 2. FAST DEFINITIONS & SINGLE-TOOL LOOKUPS ("What is PFZ?", "What is SST?", "What is weather?")
+    if any(lower_q.startswith(prefix) for prefix in ["what is ", "what are ", "explain ", "tell me about ", "define "]):
+        if not any(kw in lower_q for kw in ["safe", "safety", "route", "best zone", "recommend"]):
+            return "fast"
+
+    # 3. DEEP SAFETY / NAVIGATION / RISK / VOYAGE CRITERIA (MUST BE DEEP 🧠)
+    if intent in (IntentType.SAFETY, IntentType.NAVIGATION):
+        return "deep"
+
+    safety_risk_keywords = [
+        "safe", "safety", "risk", "hazard", "warning", "caution",
+        "can i go", "can we go", "should i go", "is it safe", "can i safely", "able to fish",
+        "route", "path", "navigate", "navigation", "avoid",
+        "nearest pfz", "best zone", "which zone", "which spot", "recommend",
+        "why is it unsafe", "why risk", "compare", "decline"
+    ]
+    if any(kw in lower_q for kw in safety_risk_keywords):
+        return "deep"
+
+    # Multi-condition temporal requests with action
+    if any(t in lower_q for t in ["tomorrow", "next 3 days", "forecast"]):
+        if any(w in lower_q for w in ["go", "fish", "fishing", "sail", "voyage", "route", "safely"]):
+            return "deep"
+
+    single_tool_keywords = ["weather", "wind", "waves", "wave", "sst", "temperature", "pfz", "current", "tide"]
+    if any(kw in lower_q for kw in single_tool_keywords) and not any(kw in lower_q for kw in ["safe", "safety", "recommend", "best", "which", "should"]):
+        return "fast"
+
+    # 4. CHECK IF QUERY IS EXPLICITLY MARINE RELATED
     marine_domain_keywords = [
         "ocean", "marine", "sea", "coastal", "coast", "water", "tide", "tides", "wave", "waves",
         "current", "currents", "wind", "weather", "sst", "temperature", "temp", "depth", "bathymetry",
@@ -122,34 +150,6 @@ def route_fast_or_deep(state: SamudraState) -> str:
 
     # Non-marine queries (general chat, introductions, general questions) ALWAYS use FAST path ⚡
     if not is_marine_related:
-        return "fast"
-
-    # 3. DEEP CRITERIA FOR MARINE QUERIES
-    if intent in (IntentType.SAFETY, IntentType.NAVIGATION):
-        return "deep"
-
-    safety_risk_keywords = [
-        "safe", "safety", "risk", "hazard", "warning", "caution",
-        "can i go", "can we go", "should i go", "is it safe", "able to fish",
-        "route", "path", "navigate", "navigation", "avoid",
-        "nearest pfz", "best zone", "which zone", "which spot", "recommend",
-        "why is it unsafe", "why risk", "compare", "decline"
-    ]
-    if any(kw in lower_q for kw in safety_risk_keywords):
-        return "deep"
-
-    # Multi-condition temporal requests with action
-    if any(t in lower_q for t in ["tomorrow", "next 3 days", "forecast"]):
-        if any(w in lower_q for w in ["go", "fish", "fishing", "sail", "voyage", "route"]):
-            return "deep"
-
-    # 4. FAST DEFINITIONS & SINGLE-TOOL INQUIRIES
-    if any(lower_q.startswith(prefix) for prefix in ["what is ", "what are ", "explain ", "tell me about ", "define "]):
-        if not any(kw in lower_q for kw in ["safe", "safety", "route", "best zone", "recommend"]):
-            return "fast"
-
-    single_tool_keywords = ["weather", "wind", "waves", "wave", "sst", "temperature"]
-    if any(kw in lower_q for kw in single_tool_keywords) and not any(kw in lower_q for kw in ["safe", "safety", "recommend", "best", "which", "should"]):
         return "fast"
 
     # Default for complex marine queries

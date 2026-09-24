@@ -88,6 +88,7 @@ export interface EvidenceSummary {
 }
 
 export interface AgentStepPayload {
+  id?: string;
   node: string;
   status: string;
   message: string;

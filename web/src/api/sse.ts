@@ -45,9 +45,19 @@ export function startChatStream(
       const decoder = new TextDecoder();
       let buffer = '';
 
+      let lastDonePayload: any = null;
+      let hasCalledDone = false;
+
       function read() {
         reader.read().then(({ done, value }) => {
-          if (done) return;
+          if (done) {
+            if (!hasCalledDone && handlers.onDone) {
+              hasCalledDone = true;
+              handlers.onDone(lastDonePayload || { response: '', artifacts: [] });
+            }
+            return;
+          }
+
           buffer += decoder.decode(value, { stream: true });
 
           const lines = buffer.split('\n');
@@ -73,8 +83,12 @@ export function startChatStream(
                   handlers.onArtifact(parsed.artifact || parsed);
                 } else if (currentEvent === 'response' && handlers.onResponseChunk) {
                   handlers.onResponseChunk(parsed);
-                } else if (currentEvent === 'done' && handlers.onDone) {
-                  handlers.onDone(parsed);
+                } else if (currentEvent === 'done') {
+                  lastDonePayload = parsed;
+                  if (handlers.onDone && !hasCalledDone) {
+                    hasCalledDone = true;
+                    handlers.onDone(parsed);
+                  }
                 } else if (currentEvent === 'error' && handlers.onError) {
                   handlers.onError(parsed);
                 }
